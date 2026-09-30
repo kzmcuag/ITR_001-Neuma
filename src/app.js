@@ -2,6 +2,7 @@ import * as THREE from 'three';
 import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
 import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
 import { collectPlayableEdges } from './model-edges.js';
+import { LiveAudioEngine } from './live-audio.js';
 import { axisNames, swapAssignment, parseDuration, frequency, eventFor,
     defaultPitch, changePitch, parsePitch, pitchName } from './mapping.js';
 
@@ -11,7 +12,8 @@ const sampleURL = new URL('models/test_plasticNumber.glb', window.location.href)
 let axes = ['TIME', 'PITCH', 'TIMBRE'];
 let duration = 60, pitch = defaultPitch(1), customPitch = false;
 let edges = [], box = new THREE.Box3(), events = [];
-let playing = false, offset = 0, started = 0, ctx, master, voices = [];
+let playing = false, offset = 0, started = 0, ctx, master, engine, analyser, audioTimer;
+const meterSamples = new Float32Array(2048);
 let edgeLines, activeLines, plane, loadGeneration = 0;
 
 const scene = new THREE.Scene();
@@ -89,7 +91,7 @@ function makePlane() {
 
 function rebuild() {
     stop(false);
-    events = edges.map(e => eventFor(e, axes, box, duration));
+    events = edges.map((e,id) => ({...eventFor(e, axes, box, duration),id}));
     document.querySelectorAll('[data-axis]').forEach(s => s.value = axes[+s.dataset.axis]);
     $('axesnote').textContent = axes.map((role,i) => `${axisNames[i].toUpperCase()} / ${role}`).join('\n');
     syncPitch();
@@ -159,14 +161,8 @@ async function sample() {
 
 function time() { return playing ? Math.min(duration, offset + ctx.currentTime - started) : offset; }
 function silence() {
-    if (!ctx) return;
-    const now = ctx.currentTime;
-    for (const v of voices) {
-        v.gain.gain.cancelScheduledValues(now);
-        v.gain.gain.setTargetAtTime(0, now, .005);
-        for (const o of v.osc) { try { o.stop(now + .03); } catch {} }
-    }
-    voices = [];
+    clearInterval(audioTimer); audioTimer = undefined;
+    engine?.silence();
 }
 function stop(reset = true) {
     offset = reset ? 0 : time(); playing = false; silence();
@@ -176,51 +172,33 @@ async function audio() {
     if (!ctx) {
         ctx = new AudioContext(); master = ctx.createGain();
         const compressor = ctx.createDynamicsCompressor();
-        master.connect(compressor); compressor.connect(ctx.destination);
+        analyser = ctx.createAnalyser(); analyser.fftSize = 2048;
+        master.connect(compressor); compressor.connect(analyser); analyser.connect(ctx.destination);
+        engine = new LiveAudioEngine(ctx,master,64);
     }
     await ctx.resume(); master.gain.value = +$('volume').value;
 }
 function schedule(from) {
     silence();
-    const now = ctx.currentTime;
     const pk = axisNames[axes.indexOf('PITCH')], ck = axisNames[axes.indexOf('TIMBRE')];
-    const cspan = box.max[ck] - box.min[ck], limit = ctx.sampleRate * .45;
-    let skipped = 0, occupied = [];
-    for (const e of [...events].sort((a,b) => a.start-b.start)) {
-        if (e.end <= from) continue;
-        const begin = Math.max(from,e.start), u = (begin-e.start)/(e.end-e.start);
-        const coord = e.a[e.p] + (e.b[e.p]-e.a[e.p])*u;
-        const f0 = frequency(coord,box.min[pk],pitch.half,pitch.low);
-        const f1 = frequency(e.b[e.p],box.min[pk],pitch.half,pitch.low);
-        if (!Number.isFinite(f0) || !Number.isFinite(f1) || Math.min(f0,f1) >= limit) { skipped++; continue; }
-        occupied = occupied.filter(t => t > begin);
-        if (occupied.length >= 64) { skipped++; continue; }
-        occupied.push(e.end);
-        const t0 = now+begin-from+.02, t1 = now+e.end-from+.02;
-        const gain = ctx.createGain(), sine = ctx.createOscillator(), rich = ctx.createOscillator();
-        const sg = ctx.createGain(), rg = ctx.createGain();
-        sine.type = 'sine'; rich.type = 'sawtooth';
-        const c0 = cspan > 0 ? (e.a[e.c]+(e.b[e.c]-e.a[e.c])*u-box.min[ck])/cspan : 0;
-        const c1 = cspan > 0 ? (e.b[e.c]-box.min[ck])/cspan : 0;
-        for (const o of [sine,rich]) {
-            o.frequency.setValueAtTime(Math.min(limit,f0),t0);
-            o.frequency.exponentialRampToValueAtTime(Math.min(limit,f1),t1);
-            o.start(t0); o.stop(t1+.025);
+    const cspan = box.max[ck] - box.min[ck];
+    function tick() {
+        const t = Math.min(duration,from + ctx.currentTime - started);
+        if (t >= duration) { stop(false); status('Finished'); return; }
+        const candidates = [];
+        for (const e of events) {
+            if (t < e.start || t >= e.end) continue;
+            const u = (t-e.start)/(e.end-e.start);
+            const coordinate = e.a[e.p]+(e.b[e.p]-e.a[e.p])*u;
+            const timbre = cspan>0 ? (e.a[e.c]+(e.b[e.c]-e.a[e.c])*u-box.min[ck])/cspan : 0;
+            candidates.push({ id:e.id, frequency:frequency(coordinate,box.min[pk],pitch.half,pitch.low), timbre });
         }
-        sg.gain.setValueAtTime(1-c0,t0); sg.gain.linearRampToValueAtTime(1-c1,t1);
-        rg.gain.setValueAtTime(c0*.35,t0); rg.gain.linearRampToValueAtTime(c1*.35,t1);
-        sine.connect(sg).connect(gain); rich.connect(rg).connect(gain); gain.connect(master);
-        gain.gain.setValueAtTime(0,t0);
-        gain.gain.linearRampToValueAtTime(.06,t0+Math.min(.008,(t1-t0)/3));
-        gain.gain.setValueAtTime(.06,Math.max(t0+.008,t1-.012));
-        gain.gain.linearRampToValueAtTime(0,t1+.02);
-        const voice = { gain, osc: [sine,rich] }; voices.push(voice);
-        rich.onended = () => {
-            for (const node of [gain,sine,rich,sg,rg]) node.disconnect();
-            voices = voices.filter(v => v !== voice);
-        };
+        engine.update(candidates);
+        status('Playing'+(engine.limited ? ' · '+engine.limited+' edges limited now' : '')+
+            (engine.outOfRange ? ' · '+engine.outOfRange+' out of frequency range' : ''));
     }
-    status(skipped ? `Playing · ${skipped} edges skipped (frequency / 64 voices).` : 'Playing');
+    tick();
+    audioTimer = setInterval(tick,20);
 }
 
 $('play').onclick = async () => {
@@ -311,10 +289,16 @@ function animate() {
         let index = 0;
         for (const e of active) for (const p of [e.a,e.b]) positions.setXYZ(index++,p.x-center.x,p.y-center.y,p.z-center.z);
         activeLines.geometry.setDrawRange(0,index); positions.needsUpdate = true;
-        $('voices').textContent = `${active.length} edges`;
+        $('voices').textContent = `${engine?.active || 0} voices`;
+        $('intersections').textContent = `${active.length} intersecting edges`;
     }
     if (document.activeElement !== $('seek')) $('seek').value = t/duration;
     $('clock').textContent = `${format(t)} / ${format(duration)}`;
+    if (analyser) {
+        analyser.getFloatTimeDomainData(meterSamples);
+        const rms = Math.sqrt(meterSamples.reduce((sum,x)=>sum+x*x,0)/meterSamples.length);
+        $('audioLevel').textContent = rms>0.00001 ? 'Output: '+(20*Math.log10(rms)).toFixed(1)+' dB' : 'Output: silent';
+    }
     controls.update(); renderer.render(scene,camera);
 }
 sample(); animate();

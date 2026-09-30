@@ -5,7 +5,7 @@
   "scripts": {
     "build": "esbuild src/app.js --bundle --minify --outfile=dist/app.js",
     "dev": "node server.mjs",
-    "test": "node tests.mjs && node glb-test.mjs"
+    "test": "node tests.mjs && node glb-test.mjs && node audio-tests.mjs"
   },
   "dependencies": {
     "three": "0.180.0"

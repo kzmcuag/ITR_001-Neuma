@@ -1,4 +1,4 @@
-# Neuma v0.1
+# Neuma v0.1.1
 
 Browser instrument mapping the edges of a 3D model to time, pitch and timbre.
 
@@ -54,7 +54,9 @@ Nonpositive values, reversed ranges and excessive ranges are rejected. A pitch a
 
 ## Timbre and limits
 
-Normalized Timbre-axis coordinates continuously mix sine and sawtooth spectra. Zero-time-length edges become short 45ms events. A compressor and a 64-voice limit control the mix. Edges above the audio sample-rate limit are skipped or capped, with skipped counts shown in status.
+Normalized Timbre-axis coordinates continuously mix sine and sawtooth spectra. Zero-time-length edges become short 45ms events. Audio follows the current timeline every 20ms using a fixed pool of 64 reusable voices (128 oscillators), rather than creating nodes for the whole score. This keeps the graph size bounded for large models. When more than 64 edges intersect, voices represent the full pitch distribution; selection is re-evaluated continuously. Each edge can become audible as the active set changes, rather than being permanently discarded at playback start. Frequency/timbre changes and voice transitions are smoothed.
+
+The display separates actual voices from intersecting geometry. `edges limited now` is the number of intersecting edges not represented at the current tick, not a whole-score cumulative skip count. Frequencies outside the audio sample-rate limit are excluded. `Output` shows the post-compressor RMS level in dBFS; it measures the browser's audio signal, not the physical speaker volume. Pausing and stopping fade the pool to silence; seeking and resuming reuse it.
 
 The Corda `collectPlayableEdges` implementation is reused, with an `EdgesGeometry` threshold of 15 degrees. Node world transforms are preserved and musical mapping uses the model's original coordinates and units. Only display geometry is centered.
 
@@ -70,6 +72,7 @@ Use embedded, uncompressed GLB static meshes. Draco/Meshopt compression, externa
 - `src/mapping.js`: axis, duration and linked pitch calculations.
 - `src/model-edges.js`: edge extraction reused from Corda.
 - `dist/`: built static app, styles and sample model.
-- `tests.mjs`, `glb-test.mjs`: transformation and parsing tests.
+- `src/live-audio.js`: bounded reusable voice pool and pitch-distributed selection.
+- `tests.mjs`, `glb-test.mjs`, `audio-tests.mjs`: transformation, parsing and dense audio-pool regression tests.
 
 Three.js is bundled locally. Google Fonts supplies the same fonts as Corda, with monospace fallbacks if unavailable.

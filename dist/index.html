@@ -1,10 +1,10 @@
 <!DOCTYPE html>
-<html lang="en"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><title>Neuma v0.1</title><link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin><link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=Inter:wght@400&display=swap" rel="stylesheet"><link rel="stylesheet" href="style.css"></head>
+<html lang="en"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><title>Neuma v0.1.1</title><link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin><link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=Inter:wght@400&display=swap" rel="stylesheet"><link rel="stylesheet" href="style.css?v=0.1.1"></head>
 <body>
 <div id="view"></div>
 <button id="settingsToggle" aria-controls="info" aria-expanded="false">[setting]</button>
 <div id="info">
-<strong>NEUMA v0.1</strong>
+<strong>NEUMA v0.1.1</strong>
 <div class="help">Drag: Orbit<br>Right drag: Orbit<br>Middle drag: Pan<br>Wheel: Zoom</div>
 <div id="modelRow"><span id="model">Model: Loading</span><button id="load">Replace</button><button id="demo">Sample</button></div>
 <div id="stats"></div>
@@ -24,9 +24,10 @@
 </section>
 <section><div class="sectionTitle">TIMBRE</div><div class="timbre"><span>Sine</span><span>Rich</span></div><div class="spectrum"></div></section>
 <section><div class="sectionTitle">SOUND</div><div class="row"><label for="volume">Volume</label><input id="volume" aria-label="Volume" type="range" min="0" max="0.5" step="0.01" value="0.12"></div></section>
-<section id="performanceControls"><div class="modeToggle"><button id="play">Play</button><button id="stop">Stop</button></div><div class="clockRow"><span id="clock">0:00 / 1:00</span><span id="voices">0 edges</span></div><input id="seek" aria-label="Playback position" type="range" min="0" max="1" step="0.001" value="0"><div id="status" role="status">Loading sample…</div><button class="textButton" id="fit">Fit model</button></section>
+<section id="performanceControls"><div class="modeToggle"><button id="play">Play</button><button id="stop">Stop</button></div><div class="clockRow"><span id="clock">0:00 / 1:00</span><span id="voices">0 voices</span></div><div id="intersections" class="small">0 intersecting edges</div><div id="audioLevel" class="small">Output: silent</div><input id="seek" aria-label="Playback position" type="range" min="0" max="1" step="0.001" value="0"><div id="status" role="status">Loading sample…</div><button class="textButton" id="fit">Fit model</button></section>
 </div>
 <div id="axesnote"></div><div id="projectName">Instrumentarium</div>
 <input hidden id="file" type="file">
-<script type="module" src="app.js"></script>
+<script type="module" src="app.js?v=0.1.1"></script>
 </body></html>
+
