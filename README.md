@@ -1,30 +1,75 @@
 # Neuma v0.1
 
-ブラウザ上で3Dモデルのエッジを時間・音高・音色へ変換する実験的な楽器。
+Browser instrument mapping the edges of a 3D model to time, pitch and timbre.
 
-## 起動
+**Live app:** https://kzmcuag.github.io/ITR_001-Neuma/
 
-Node.js 22以降。`npm ci` → `npm run build` → `npm run dev`。表示されたローカルURLをブラウザで開く。
+## Run locally
 
-## 操作
+Node.js 22 or later:
 
-- Open .glb またはドロップでモデルを読み込む。読み込んだファイルはブラウザ内で処理し、サーバーへ送信しない。
-- X/Y/ZにTIME/PITCH/TIMBREを割り当てる。割当の重複は自動交換で防ぐ。
-- Duration: モデルのTime軸全長を走査する秒数、または `m:ss`。デフォルト `1:00`。
-- Half tone: Pitch軸全長÷100を初期値とし、半音相当距離をunitsで入力。手入力後は軸変更でも値を保持。Resetで自動設定へ戻す。新しいモデルでは初期化。
-- Pitch軸の最小座標をA4=440Hzとし、`440 * 2^((coordinate-min)/halfTone/12)`で連続音高へ変換。
-- TIMBRE: 正規化座標によるsineとsawtoothの連続混合。
-- Play/Pause、Stop、再生位置、Volume。走査平面と現在交差しているエッジを表示。
-- ドラッグで回転、ホイールでズーム、2本指で拡大・移動。背景タブに移ると一時停止。
+```sh
+npm ci
+npm run build
+npm run dev
+```
 
-## 範囲と制約
+Open `http://127.0.0.1:4173/`. `npm test` checks mapping, linked pitch controls, GLB parsing and transformed edge extraction.
 
-Cordaの `collectPlayableEdges` を再利用（EdgesGeometryの角度閾値15°、ワールド座標）。モデルの表示だけを中心に移動し、音への変換は元の座標と単位を使用。静止メッシュを対象とし、アニメーションやスキニングの再生は未対応。GLBの線プリミティブは未対応。Draco/Meshopt等の圧縮モデル、外部参照テクスチャは対象外。埋込データの非圧縮GLBを使用。
+## Model and navigation
 
-時間幅0のエッジは約45msの短いイベント。音高のデフォルトは100半音の幅となり、A4を起点に高域まで広がるため、AudioContextのNyquist上限に達する線は省略または上限で制限。Half toneを大きくすると音域が狭くなる。音声負荷を抑えるため同時64音まで、最大100 MB / 100,000 edges。省略数はステータスに表示。
+The supplied `test_plasticNumber.glb` loads automatically. Sample reloads it; Replace or drag and drop loads a local GLB. Local files are processed in the browser and are not uploaded. Drag or right drag to orbit, middle drag to pan, wheel to zoom. On mobile, open `[setting]` to access controls; pinch to zoom.
 
-## 構成
+The interface follows Corda's design tokens: `#111111` background, IBM Plex Mono, 12px main text, 11px controls, 10px section labels, 220px panel at top 26px / left 28px, and green interaction accents. All app text is English. Instrumentarium uses Inter as in Corda.
 
-`src/app.js`: Three.js / GLTFLoader / OrbitControls / Web Audio。`src/mapping.js`: 変換計算。`src/model-edges.js`: Corda由来の抽出処理。`dist/`: ビルド済みの静的アプリ。
+## Axis assignment and time
 
-`npm test`で変換とエッジ抽出を検証。`npm run build`でローカル依存を含めて配布ファイルにまとめる。実行時CDN依存なし。
+X/Y/Z are assigned to TIME/PITCH/TIMBRE without duplicates; selecting an assigned role swaps the axes. Duration is the time to scan the entire selected Time axis. Default: `1:00` (60 seconds). Enter seconds or `m:ss`, up to 60 minutes. The scanning plane follows the selected axis; intersecting edges are highlighted. Play/Pause, Stop and the position slider control playback. Leaving the tab pauses playback.
+
+## Linked pitch controls
+
+Default: **48 semitones**, centered on **D4 = 293.664768 Hz** in musical pitch space:
+
+- Minimum: D2 = 73.416192 Hz.
+- Maximum: D6 = 1174.659072 Hz.
+- Half tone: Pitch-axis bounding-box length / 48 units.
+
+Minimum and Maximum accept note names such as `D3`, `F#4`, `Bb2`, or frequencies such as `220` / `220 Hz`. The adjacent label shows the corresponding note, including cents for intermediate pitches.
+
+- Editing Minimum keeps Maximum fixed and recalculates Half tone.
+- Editing Maximum keeps Minimum fixed and recalculates Half tone.
+- Editing Half tone keeps the current musical midpoint fixed and recalculates both endpoints.
+- Reset restores the 48-semitone range centered on D4.
+- Axis changes keep a manually entered Half tone and the current midpoint, updating endpoints for the new axis length. Before a manual pitch edit, axis changes restore the default range. New models reset pitch controls to the default range.
+
+The midpoint is the geometric mean of the two frequencies, corresponding to the midpoint in semitone space, rather than the arithmetic mean of Hz.
+
+```text
+semitones = 12 * log2(maximumHz / minimumHz)
+halfToneUnits = pitchAxisLength / semitones
+frequency = minimumHz * 2 ^ ((coordinate - axisMinimum) / halfToneUnits / 12)
+```
+
+Nonpositive values, reversed ranges and excessive ranges are rejected. A pitch axis with zero length maps all edges to one frequency (D4 by default).
+
+## Timbre and limits
+
+Normalized Timbre-axis coordinates continuously mix sine and sawtooth spectra. Zero-time-length edges become short 45ms events. A compressor and a 64-voice limit control the mix. Edges above the audio sample-rate limit are skipped or capped, with skipped counts shown in status.
+
+The Corda `collectPlayableEdges` implementation is reused, with an `EdgesGeometry` threshold of 15 degrees. Node world transforms are preserved and musical mapping uses the model's original coordinates and units. Only display geometry is centered.
+
+Use embedded, uncompressed GLB static meshes. Draco/Meshopt compression, external referenced assets, line primitives, skinning and animated deformation are not supported. Maximum: 100 MB / 100,000 edges.
+
+## Deployment
+
+`.github/workflows/deploy.yml` tests and builds the app, then deploys `dist/` to GitHub Pages on pushes to `main`. Enable Pages with GitHub Actions as its source. Assets use relative paths and work under the repository URL. The sample model is included in `dist/models/`.
+
+## Files
+
+- `src/app.js`: Three.js scene, controls, GLB loading and Web Audio.
+- `src/mapping.js`: axis, duration and linked pitch calculations.
+- `src/model-edges.js`: edge extraction reused from Corda.
+- `dist/`: built static app, styles and sample model.
+- `tests.mjs`, `glb-test.mjs`: transformation and parsing tests.
+
+Three.js is bundled locally. Google Fonts supplies the same fonts as Corda, with monospace fallbacks if unavailable.

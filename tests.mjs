@@ -1,6 +1,6 @@
 import {strict as assert} from 'node:assert';
 import * as THREE from 'three';
-import {swapAssignment,parseDuration,frequency,eventFor} from './src/mapping.js';
+import {swapAssignment,parseDuration,frequency,eventFor,defaultPitch,changePitch,parsePitch,pitchName,D4} from './src/mapping.js';
 import {collectPlayableEdges} from './src/model-edges.js';
 assert.deepEqual(swapAssignment(['TIME','PITCH','TIMBRE'],0,'PITCH'),['PITCH','TIME','TIMBRE']);
 assert.equal(parseDuration('1:00'),60);assert.equal(parseDuration('2:30'),150);assert.ok(Number.isNaN(parseDuration('1:99')));assert.ok(Number.isNaN(parseDuration('0')));
@@ -11,3 +11,16 @@ const e=eventFor({a:new THREE.Vector3(10,20,30),b:new THREE.Vector3(0,0,0)},['TI
 const instant=eventFor({a:new THREE.Vector3(5,1,1),b:new THREE.Vector3(5,2,2)},['TIME','PITCH','TIMBRE'],box,60);assert.equal(instant.start,30);assert.ok(instant.end>instant.start);
 const degenerate=eventFor({a:new THREE.Vector3(0,1,1),b:new THREE.Vector3(0,2,2)},['TIME','PITCH','TIMBRE'],new THREE.Box3(new THREE.Vector3(0,0,0),new THREE.Vector3(0,2,2)),60);assert.equal(degenerate.start,0);assert.ok(Number.isFinite(degenerate.end));
 console.log('Mapping, axis swapping, durations, world-space edges and degenerate-axis tests passed.');
+const approx=(actual,expected)=>assert.ok(Math.abs(actual-expected)<Math.abs(expected)*1e-10,`${actual} != ${expected}`);
+const initial=defaultPitch(48);
+approx(initial.half,1);approx(initial.low,parsePitch('D2'));approx(initial.high,parsePitch('D6'));approx(Math.sqrt(initial.low*initial.high),D4);
+assert.equal(pitchName(D4),'D4');approx(parsePitch('A4'),440);approx(parsePitch('440 Hz'),440);
+const lowChanged=changePitch(initial,48,'low',parsePitch('D3'));
+approx(lowChanged.high,initial.high);approx(lowChanged.half,48/36);
+const highChanged=changePitch(initial,48,'high',parsePitch('D5'));
+approx(highChanged.low,initial.low);approx(highChanged.half,48/36);
+const halfChanged=changePitch(initial,48,'half',2);
+approx(halfChanged.low,parsePitch('D3'));approx(halfChanged.high,parsePitch('D5'));approx(Math.sqrt(halfChanged.low*halfChanged.high),D4);
+approx(frequency(48,0,halfChanged.half,halfChanged.low),halfChanged.high);
+assert.throws(()=>changePitch(initial,48,'low',initial.high));assert.throws(()=>changePitch(initial,48,'half',0));
+console.log('48-semitone D4 defaults and linked low/high/half-tone edits passed.');

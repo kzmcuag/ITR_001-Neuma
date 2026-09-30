@@ -1,1 +1,32 @@
-<!doctype html><html lang="ja"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>NEUMA — Geometry instrument</title><link rel="stylesheet" href="style.css"></head><body><header><h1>NEUMA<span>v0.1</span></h1><div>GEOMETRY INSTRUMENT</div><button id="load">Open .glb</button><input hidden id="file" type="file" accept=".glb"></header><main><aside><section><label>MODEL</label><h2 id="model">Study 01</h2><p id="stats"></p><button id="demo">Load demo</button></section><section><label>AXES</label><div class="row"><b>X</b><select aria-label="X axis" data-axis="0"></select></div><div class="row"><b>Y</b><select aria-label="Y axis" data-axis="1"></select></div><div class="row"><b>Z</b><select aria-label="Z axis" data-axis="2"></select></div><p>割り当て済みの軸は入れ替わります。</p></section><section><label>TIME</label><div class="row"><span>Duration</span><input id="duration" aria-label="Duration minutes and seconds" value="1:00"></div><p>選択軸のモデル全長を走査</p></section><section><label>PITCH</label><div class="row"><span>Half tone</span><input id="half" aria-label="Half tone units" type="number" min="0" step="any"><span>units</span></div><button id="auto">Reset to axis length / 100</button><div class="row base"><span>Base</span><span>A4 / 440 Hz</span></div><p>Pitch軸の最小値が基準音</p></section><section><label>TIMBRE</label><div class="row"><span>Sine</span><span>Rich</span></div><div class="spectrum"></div><p>選択軸の座標から連続変化</p></section><section><div class="row"><label for="volume">VOLUME</label><input id="volume" type="range" min="0" max="0.5" step="0.01" value="0.12"></div></section></aside><article><div id="view"></div><div class="view-label">01 / SPATIAL SCORE</div><button id="fit" class="fit">Fit model</button><div class="hint">ドラッグで回転 · スクロールで拡大<br>.glb をここにドロップ</div><div class="axes-note" id="axesnote"></div></article></main><footer><button id="play">▶ Play</button><button id="stop">■ Stop</button><span id="clock">0:00 / 1:00</span><input id="seek" aria-label="Playback position" type="range" min="0" max="1" step="0.001" value="0"><span id="voices">0 voices</span></footer><div id="status" role="status">デモを再生、または .glb を読み込んでください。</div><script type="module" src="app.js"></script></body></html>
+<!DOCTYPE html>
+<html lang="en"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><title>Neuma v0.1</title><link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin><link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=Inter:wght@400&display=swap" rel="stylesheet"><link rel="stylesheet" href="style.css"></head>
+<body>
+<div id="view"></div>
+<button id="settingsToggle" aria-controls="info" aria-expanded="false">[setting]</button>
+<div id="info">
+<strong>NEUMA v0.1</strong>
+<div class="help">Drag: Orbit<br>Right drag: Orbit<br>Middle drag: Pan<br>Wheel: Zoom</div>
+<div id="modelRow"><span id="model">Model: Loading</span><button id="load">Replace</button><button id="demo">Sample</button></div>
+<div id="stats"></div>
+<section><div class="sectionTitle">AXES</div>
+<div class="row"><label for="axisX">X</label><select id="axisX" aria-label="X axis" data-axis="0"></select></div>
+<div class="row"><label for="axisY">Y</label><select id="axisY" aria-label="Y axis" data-axis="1"></select></div>
+<div class="row"><label for="axisZ">Z</label><select id="axisZ" aria-label="Z axis" data-axis="2"></select></div>
+</section>
+<section><div class="sectionTitle">TIME</div><div class="row"><label for="duration">Duration</label><input id="duration" aria-label="Duration minutes and seconds" value="1:00" spellcheck="false"></div></section>
+<section><div class="sectionTitle">PITCH</div>
+<div class="row pitchRow"><label for="half">Half tone</label><input id="half" aria-label="Half tone units" type="number" min="0" step="any"><span>units</span></div>
+<div class="row pitchRow"><label for="low">Minimum</label><input id="low" aria-label="Minimum pitch" spellcheck="false"><span id="lowNote"></span></div>
+<div class="row pitchRow"><label for="high">Maximum</label><input id="high" aria-label="Maximum pitch" spellcheck="false"><span id="highNote"></span></div>
+<div class="small">Note or Hz · e.g. D4 / 293.665</div>
+<div class="small" id="center"></div>
+<button class="textButton" id="auto">Reset: midpoint D4</button>
+</section>
+<section><div class="sectionTitle">TIMBRE</div><div class="timbre"><span>Sine</span><span>Rich</span></div><div class="spectrum"></div></section>
+<section><div class="sectionTitle">SOUND</div><div class="row"><label for="volume">Volume</label><input id="volume" aria-label="Volume" type="range" min="0" max="0.5" step="0.01" value="0.12"></div></section>
+<section id="performanceControls"><div class="modeToggle"><button id="play">Play</button><button id="stop">Stop</button></div><div class="clockRow"><span id="clock">0:00 / 1:00</span><span id="voices">0 edges</span></div><input id="seek" aria-label="Playback position" type="range" min="0" max="1" step="0.001" value="0"><div id="status" role="status">Loading sample…</div><button class="textButton" id="fit">Fit model</button></section>
+</div>
+<div id="axesnote"></div><div id="projectName">Instrumentarium</div>
+<input hidden id="file" type="file">
+<script type="module" src="app.js"></script>
+</body></html>
