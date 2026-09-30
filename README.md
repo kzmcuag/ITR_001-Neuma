@@ -1,6 +1,6 @@
-# Neuma v0.1.1
+# Neuma v0.2
 
-Browser instrument mapping the edges of a 3D model to time, pitch and timbre.
+Browser instrument mapping the edges of a 3D model to time and pitch.
 
 **Live app:** https://kzmcuag.github.io/ITR_001-Neuma/
 
@@ -24,7 +24,7 @@ The interface follows Corda's design tokens: `#111111` background, IBM Plex Mono
 
 ## Axis assignment and time
 
-X/Y/Z are assigned to TIME/PITCH/TIMBRE without duplicates; selecting an assigned role swaps the axes. Duration is the time to scan the entire selected Time axis. Default: `1:00` (60 seconds). Enter seconds or `m:ss`, up to 60 minutes. The scanning plane follows the selected axis; intersecting edges are highlighted. Play/Pause, Stop and the position slider control playback. Leaving the tab pauses playback.
+Choose one Time axis and one Pitch axis from X/Y/Z. They cannot overlap; selecting the other role's axis swaps the two. The remaining axis only contributes to the 3D view and does not control sound. Duration is the time to scan the entire selected Time axis. Default: `1:00` (60 seconds). Enter seconds or `m:ss`, up to 60 minutes. The scanning plane follows the selected axis; active edges are highlighted. Play/Pause, Stop and the position slider control playback. Leaving the tab pauses playback.
 
 ## Linked pitch controls
 
@@ -52,11 +52,15 @@ frequency = minimumHz * 2 ^ ((coordinate - axisMinimum) / halfToneUnits / 12)
 
 Nonpositive values, reversed ranges and excessive ranges are rejected. A pitch axis with zero length maps all edges to one frequency (D4 by default).
 
-## Timbre and limits
+## Waveform and dense models
 
-Normalized Timbre-axis coordinates continuously mix sine and sawtooth spectra. Zero-time-length edges become short 45ms events. Audio follows the current timeline every 20ms using a fixed pool of 64 reusable voices (128 oscillators), rather than creating nodes for the whole score. This keeps the graph size bounded for large models. When more than 64 edges intersect, voices represent the full pitch distribution; selection is re-evaluated continuously. Each edge can become audible as the active set changes, rather than being permanently discarded at playback start. Frequency/timbre changes and voice transitions are smoothed.
+Sine and Sawtooth are global waveform choices, using Corda-style buttons. There is no Timbre-axis mapping. The default is Sine; switching waveform during playback does not reset the timeline.
 
-The display separates actual voices from intersecting geometry. `edges limited now` is the number of intersecting edges not represented at the current tick, not a whole-score cumulative skip count. Frequencies outside the audio sample-rate limit are excluded. `Output` shows the post-compressor RMS level in dBFS; it measures the browser's audio signal, not the physical speaker volume. Pausing and stopping fade the pool to silence; seeking and resuming reuse it.
+Audio follows the current timeline every 20ms using a fixed pool of up to 256 single-oscillator voices. All valid active edges contribute: nearly identical pitches are combined within one-cent bins, and if there are still more than 256 groups, adaptive bands merge them using an edge-count-weighted geometric mean frequency. This is an approximation for dense polyphony, not 256 randomly selected edges. Group energy follows edge count (amplitude scales with its square root), so dense window details have more weight than a lone top edge. Above 440 Hz, a gentle gain reduction of `sqrt(440/frequency)` limits high-pitch dominance. A compressor controls the final mix.
+
+Short edges have a minimum event duration of 140ms (previously 45ms), making brief window edges easier to perceive. The overall scan duration and logarithmic pitch mapping remain the same. Frequency changes, gain changes and voice transitions are smoothed.
+
+The display separates oscillator voices from active edges. `edges voiced` counts all valid active edges represented by the mix; `combined` counts edges sharing voices. Frequencies outside the audio sample-rate limit are excluded. `Output` shows the post-compressor RMS level in dBFS; it measures the browser's audio signal, not the physical speaker volume. Pausing and stopping fade the pool to silence; seeking and resuming reuse it.
 
 The Corda `collectPlayableEdges` implementation is reused, with an `EdgesGeometry` threshold of 15 degrees. Node world transforms are preserved and musical mapping uses the model's original coordinates and units. Only display geometry is centered.
 
@@ -72,7 +76,7 @@ Use embedded, uncompressed GLB static meshes. Draco/Meshopt compression, externa
 - `src/mapping.js`: axis, duration and linked pitch calculations.
 - `src/model-edges.js`: edge extraction reused from Corda.
 - `dist/`: built static app, styles and sample model.
-- `src/live-audio.js`: bounded reusable voice pool and pitch-distributed selection.
+- `src/live-audio.js`: bounded reusable voice pool, density-aware pitch grouping and waveform selection.
 - `tests.mjs`, `glb-test.mjs`, `audio-tests.mjs`: transformation, parsing and dense audio-pool regression tests.
 
 Three.js is bundled locally. Google Fonts supplies the same fonts as Corda, with monospace fallbacks if unavailable.

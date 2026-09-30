@@ -9,7 +9,8 @@ import { axisNames, swapAssignment, parseDuration, frequency, eventFor,
 const $ = id => document.getElementById(id);
 const status = text => $('status').textContent = text;
 const sampleURL = new URL('models/test_plasticNumber.glb', window.location.href);
-let axes = ['TIME', 'PITCH', 'TIMBRE'];
+let axes = ['TIME', 'PITCH', 'UNUSED'];
+let waveform = 'sine';
 let duration = 60, pitch = defaultPitch(1), customPitch = false;
 let edges = [], box = new THREE.Box3(), events = [];
 let playing = false, offset = 0, started = 0, ctx, master, engine, analyser, audioTimer;
@@ -92,8 +93,8 @@ function makePlane() {
 function rebuild() {
     stop(false);
     events = edges.map((e,id) => ({...eventFor(e, axes, box, duration),id}));
-    document.querySelectorAll('[data-axis]').forEach(s => s.value = axes[+s.dataset.axis]);
-    $('axesnote').textContent = axes.map((role,i) => `${axisNames[i].toUpperCase()} / ${role}`).join('\n');
+    document.querySelectorAll('[data-role]').forEach(s => s.value = String(axes.indexOf(s.dataset.role)));
+    $('axesnote').textContent = axes.flatMap((role,i) => role==='UNUSED'?[]:[`${axisNames[i].toUpperCase()} / ${role}`]).join('\n');
     syncPitch();
     makePlane();
     status(pitchSpan() > 0 ? 'Ready' : 'Pitch axis has zero length. All edges use minimum pitch.');
@@ -174,14 +175,14 @@ async function audio() {
         const compressor = ctx.createDynamicsCompressor();
         analyser = ctx.createAnalyser(); analyser.fftSize = 2048;
         master.connect(compressor); compressor.connect(analyser); analyser.connect(ctx.destination);
-        engine = new LiveAudioEngine(ctx,master,64);
+        engine = new LiveAudioEngine(ctx,master,256);
+        engine.setWaveform(waveform);
     }
     await ctx.resume(); master.gain.value = +$('volume').value;
 }
 function schedule(from) {
     silence();
-    const pk = axisNames[axes.indexOf('PITCH')], ck = axisNames[axes.indexOf('TIMBRE')];
-    const cspan = box.max[ck] - box.min[ck];
+    const pk = axisNames[axes.indexOf('PITCH')];
     function tick() {
         const t = Math.min(duration,from + ctx.currentTime - started);
         if (t >= duration) { stop(false); status('Finished'); return; }
@@ -190,11 +191,10 @@ function schedule(from) {
             if (t < e.start || t >= e.end) continue;
             const u = (t-e.start)/(e.end-e.start);
             const coordinate = e.a[e.p]+(e.b[e.p]-e.a[e.p])*u;
-            const timbre = cspan>0 ? (e.a[e.c]+(e.b[e.c]-e.a[e.c])*u-box.min[ck])/cspan : 0;
-            candidates.push({ id:e.id, frequency:frequency(coordinate,box.min[pk],pitch.half,pitch.low), timbre });
+            candidates.push({ id:e.id, frequency:frequency(coordinate,box.min[pk],pitch.half,pitch.low) });
         }
         engine.update(candidates);
-        status('Playing'+(engine.limited ? ' · '+engine.limited+' edges limited now' : '')+
+        status('Playing · '+engine.represented+' edges voiced'+(engine.merged ? ' · '+engine.merged+' combined' : '')+
             (engine.outOfRange ? ' · '+engine.outOfRange+' out of frequency range' : ''));
     }
     tick();
@@ -242,22 +242,30 @@ for (const field of ['half','low','high']) {
     $(field).onchange = () => editPitch(field,true);
 }
 $('auto').onclick = () => { pitch = defaultPitch(pitchSpan()); customPitch = false; rebuild(); };
-document.querySelectorAll('[data-axis]').forEach(s => {
-    for (const role of axes) s.add(new Option(role,role));
-    s.onchange = () => {
-        const previousAxes = axes;
-        axes = swapAssignment(axes,+s.dataset.axis,s.value);
+document.querySelectorAll('[data-role]').forEach(select => {
+    axisNames.forEach((name,index) => select.add(new Option(name.toUpperCase(),String(index))));
+    select.value = String(axes.indexOf(select.dataset.role));
+    select.onchange = () => {
+        const previous = axes;
+        axes = swapAssignment(axes,+select.value,select.dataset.role);
         try {
             if (customPitch) pitch = changePitch(pitch,pitchSpan(),'half',pitch.half);
             else pitch = defaultPitch(pitchSpan());
             rebuild();
         } catch (e) {
-            axes = previousAxes;
-            document.querySelectorAll('[data-axis]').forEach(s => s.value = axes[+s.dataset.axis]);
+            axes = previous;
+            document.querySelectorAll('[data-role]').forEach(s => s.value=String(axes.indexOf(s.dataset.role)));
             status(e.message);
         }
     };
 });
+for (const type of ['sine','sawtooth']) $(type+'Button').onclick = () => {
+    waveform = type; engine?.setWaveform(type);
+    for (const name of ['sine','sawtooth']) {
+        $(name+'Button').classList.toggle('active',name===type);
+        $(name+'Button').setAttribute('aria-pressed',String(name===type));
+    }
+};
 $('load').onclick = () => $('file').click();
 $('file').onchange = () => { load($('file').files[0]); $('file').value = ''; };
 $('demo').onclick = sample; $('fit').onclick = fit;

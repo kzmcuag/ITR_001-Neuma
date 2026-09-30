@@ -1,17 +1,16 @@
 <!DOCTYPE html>
-<html lang="en"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><title>Neuma v0.1.1</title><link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin><link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=Inter:wght@400&display=swap" rel="stylesheet"><link rel="stylesheet" href="style.css?v=0.1.1"></head>
+<html lang="en"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><title>Neuma v0.2</title><link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin><link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=Inter:wght@400&display=swap" rel="stylesheet"><link rel="stylesheet" href="style.css?v=0.2"></head>
 <body>
 <div id="view"></div>
 <button id="settingsToggle" aria-controls="info" aria-expanded="false">[setting]</button>
 <div id="info">
-<strong>NEUMA v0.1.1</strong>
+<strong>NEUMA v0.2</strong>
 <div class="help">Drag: Orbit<br>Right drag: Orbit<br>Middle drag: Pan<br>Wheel: Zoom</div>
 <div id="modelRow"><span id="model">Model: Loading</span><button id="load">Replace</button><button id="demo">Sample</button></div>
 <div id="stats"></div>
 <section><div class="sectionTitle">AXES</div>
-<div class="row"><label for="axisX">X</label><select id="axisX" aria-label="X axis" data-axis="0"></select></div>
-<div class="row"><label for="axisY">Y</label><select id="axisY" aria-label="Y axis" data-axis="1"></select></div>
-<div class="row"><label for="axisZ">Z</label><select id="axisZ" aria-label="Z axis" data-axis="2"></select></div>
+<div class="row"><label for="timeAxis">Time</label><select id="timeAxis" aria-label="Time axis" data-role="TIME"></select></div>
+<div class="row"><label for="pitchAxis">Pitch</label><select id="pitchAxis" aria-label="Pitch axis" data-role="PITCH"></select></div>
 </section>
 <section><div class="sectionTitle">TIME</div><div class="row"><label for="duration">Duration</label><input id="duration" aria-label="Duration minutes and seconds" value="1:00" spellcheck="false"></div></section>
 <section><div class="sectionTitle">PITCH</div>
@@ -22,12 +21,12 @@
 <div class="small" id="center"></div>
 <button class="textButton" id="auto">Reset: midpoint D4</button>
 </section>
-<section><div class="sectionTitle">TIMBRE</div><div class="timbre"><span>Sine</span><span>Rich</span></div><div class="spectrum"></div></section>
+<section><div class="sectionTitle">WAVEFORM</div><div class="modeToggle" role="group" aria-label="Waveform"><button id="sawtoothButton" aria-pressed="false">Sawtooth</button><button id="sineButton" class="active" aria-pressed="true">Sine</button></div></section>
 <section><div class="sectionTitle">SOUND</div><div class="row"><label for="volume">Volume</label><input id="volume" aria-label="Volume" type="range" min="0" max="0.5" step="0.01" value="0.12"></div></section>
 <section id="performanceControls"><div class="modeToggle"><button id="play">Play</button><button id="stop">Stop</button></div><div class="clockRow"><span id="clock">0:00 / 1:00</span><span id="voices">0 voices</span></div><div id="intersections" class="small">0 intersecting edges</div><div id="audioLevel" class="small">Output: silent</div><input id="seek" aria-label="Playback position" type="range" min="0" max="1" step="0.001" value="0"><div id="status" role="status">Loading sample…</div><button class="textButton" id="fit">Fit model</button></section>
 </div>
 <div id="axesnote"></div><div id="projectName">Instrumentarium</div>
 <input hidden id="file" type="file">
-<script type="module" src="app.js?v=0.1.1"></script>
+<script type="module" src="app.js?v=0.2"></script>
 </body></html>
 

@@ -25,4 +25,6 @@ export function parsePitch(value){
     return Number(text.replace(/\s*Hz$/i,''));
 }
 export function pitchName(hz){const midi=69+12*Math.log2(hz/440),nearest=Math.round(midi),names=['C','C#','D','D#','E','F','F#','G','G#','A','A#','B'],cents=Math.round((midi-nearest)*100);return names[((nearest%12)+12)%12]+(Math.floor(nearest/12)-1)+(cents?` ${cents>0?'+':''}${cents}c`:'');}
-export function eventFor(edge,axes,box,duration){let a=edge.a,b=edge.b;const t=axes.indexOf('TIME'),p=axes.indexOf('PITCH'),c=axes.indexOf('TIMBRE'),tk=axisNames[t];if(a[tk]>b[tk])[a,b]=[b,a];const length=box.max[tk]-box.min[tk];const start=length>0?(a[tk]-box.min[tk])/length*duration:0,end=length>0?(b[tk]-box.min[tk])/length*duration:0;return {start,end:Math.min(duration,Math.max(end,start+.045)),a,b,p:axisNames[p],c:axisNames[c]};}
+export function eventFor(edge,axes,box,duration){let a=edge.a,b=edge.b;const t=axes.indexOf('TIME'),p=axes.indexOf('PITCH'),tk=axisNames[t];if(a[tk]>b[tk])[a,b]=[b,a];const length=box.max[tk]-box.min[tk];const start=length>0?(a[tk]-box.min[tk])/length*duration:0,end=length>0?(b[tk]-box.min[tk])/length*duration:0;return {start,end:Math.min(duration,Math.max(end,start+.14)),a,b,p:axisNames[p]};}
+
+
