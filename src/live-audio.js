@@ -58,9 +58,9 @@ export class LiveAudioEngine {
             const voice=assigned.get(group.id)||available.shift();
             const changed=voice.id!==group.id;voice.id=group.id;
             this.smooth(voice.oscillator.frequency,group.frequency,time,changed?.003:.008);
-            // Energy follows edge density; repeated windows outweigh a lone roof edge.
+            // Coincident edges form one note; duplication never boosts its volume.
             const highBalance=Math.sqrt(440/Math.max(440,group.frequency));
-            const amplitude=(this.waveform==='sine'?.25:.30)*Math.sqrt(group.count/represented)*highBalance;
+            const amplitude=(this.waveform==='sine'?.25:.30)/Math.sqrt(groups.length)*highBalance;
             this.smooth(voice.gain.gain,amplitude,time,changed?.01:.008);
         }
     }

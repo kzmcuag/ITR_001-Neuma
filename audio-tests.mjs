@@ -19,7 +19,10 @@ engine.update(scene);
 assert.equal(engine.active,2);assert.equal(engine.represented,81);assert.equal(engine.merged,79);
 const middle=engine.pool.find(v=>Math.abs(v.oscillator.frequency.value-330)<1e-6);
 const top=engine.pool.find(v=>Math.abs(v.oscillator.frequency.value-1174)<1e-6);
-assert.ok(middle.gain.gain.value>top.gain.gain.value*8);
+assert.ok(middle.gain.gain.value>top.gain.gain.value); // gentle high-frequency balance remains
+const duplicatedAmplitude=middle.gain.gain.value;
+engine.update([{id:0,frequency:330},{id:1,frequency:1174}]);
+assert.ok(Math.abs(engine.pool.find(v=>Math.abs(v.oscillator.frequency.value-330)<1e-6).gain.gain.value-duplicatedAmplitude)<1e-12);
 const groups=groupPitches(Array.from({length:5000},(_,id)=>({id,frequency:73*2**(id/5000*4)})),256);
 assert.ok(groups.groups.length<=256);assert.equal(groups.groups.reduce((n,g)=>n+g.count,0),5000);
 engine.setWaveform('sawtooth');engine.update(scene);
@@ -29,4 +32,4 @@ assert.equal(engine.active,2);assert.equal(engine.outOfRange,1);assert.equal(eng
 engine.silence();assert.equal(engine.active,0);assert.ok(engine.pool.every(v=>v.gain.gain.value===0));
 engine.setWaveform('sine');engine.update([{id:4,frequency:294}]);
 assert.equal(engine.active,1);assert.equal(nodes,initialNodes);
-console.log('Audio pool stays bounded; all 5,000 dense edges contribute; window density outweighs a lone top edge; both waveforms and resume work.');
+console.log('Audio pool stays bounded; duplicate pitches do not increase volume; both waveforms and resume work.');

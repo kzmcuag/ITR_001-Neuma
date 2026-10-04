@@ -57,6 +57,16 @@ input[type=range]::-moz-range-thumb { width: 1px; height: 9px; border: 0; border
 #seek { display: block; margin: 12px 0; }
 #status { color: var(--itr-text-muted); font-size: 11px; overflow-wrap: anywhere; margin-bottom: 8px; }
 #fit { font-size: 11px; }
+.transport { margin-top: 8px; }
+#edgeRangeControls { margin-top: 10px; width: var(--itr-ui-width); }
+#edgeRangeValue { float: right; }
+#edgeRangeControls input { touch-action: none; }
+.dualRange { position: relative; height: 24px; background: linear-gradient(rgba(255,255,255,.35),rgba(255,255,255,.35)) center/100% 1px no-repeat; }
+.dualRange input { position: absolute; inset: 0; width: 100%; height: 24px; margin: 0; appearance: none; background: transparent; pointer-events: none; }
+.dualRange input::-webkit-slider-thumb { appearance: none; width: 1px; height: 9px; background: var(--itr-active-ui); background-clip: padding-box; border: 8px solid transparent; box-sizing: content-box; border-radius: 0; pointer-events: auto; cursor: ew-resize; }
+.dualRange input::-moz-range-thumb { width: 1px; height: 9px; background: var(--itr-active-ui); background-clip: padding-box; border: 8px solid transparent; box-sizing: content-box; border-radius: 0; pointer-events: auto; cursor: ew-resize; }
+.dualRange input:focus { z-index: 2; }
+.dualRange input:focus-visible { outline: 1px solid var(--itr-text-muted); outline-offset: 2px; }
 #axesnote { position: fixed; bottom: 48px; right: 20px; color: var(--itr-text-faint); font-size: 10px; line-height: 1.65; white-space: pre-line; pointer-events: none; }
 #projectName { font-family: "Inter",Arial,sans-serif; position: fixed; right: max(20px,env(safe-area-inset-right)); bottom: max(16px,env(safe-area-inset-bottom)); font-size: 12px; color: var(--itr-text-muted); pointer-events: none; z-index: 25; }
 #settingsToggle { display: none; position: fixed; left: 16px; top: 16px; z-index: 40; font: inherit; font-size: 12px; color: var(--itr-active-ui); background: var(--itr-background); border: 0; padding: 8px; }

@@ -1,4 +1,4 @@
-# Neuma v0.2
+# Neuma v0.3
 
 Browser instrument mapping the edges of a 3D model to time and pitch.
 
@@ -56,9 +56,15 @@ Nonpositive values, reversed ranges and excessive ranges are rejected. A pitch a
 
 Sine and Sawtooth are global waveform choices, using Corda-style buttons. There is no Timbre-axis mapping. The default is Sine; switching waveform during playback does not reset the timeline.
 
-Audio follows the current timeline every 20ms using a fixed pool of up to 256 single-oscillator voices. All valid active edges contribute: nearly identical pitches are combined within one-cent bins, and if there are still more than 256 groups, adaptive bands merge them using an edge-count-weighted geometric mean frequency. This is an approximation for dense polyphony, not 256 randomly selected edges. Group energy follows edge count (amplitude scales with its square root), so dense window details have more weight than a lone top edge. Above 440 Hz, a gentle gain reduction of `sqrt(440/frequency)` limits high-pitch dominance. A compressor controls the final mix.
+Audio follows the current timeline every 20ms using a fixed pool of up to 256 single-oscillator voices. All valid active edges contribute: nearly identical pitches are combined within one-cent bins, and if there are still more than 256 groups, adaptive bands merge them using an edge-count-weighted geometric mean frequency. This is an approximation for dense polyphony, not 256 randomly selected edges. Each pitch group has equal initial gain, normalized by the number of groups; duplicate edges do not increase its loudness. Above 440 Hz, a gentle gain reduction of `sqrt(440/frequency)` limits high-pitch dominance. A compressor controls the final mix.
 
-Short edges have a minimum event duration of 140ms (previously 45ms), making brief window edges easier to perceive. The overall scan duration and logarithmic pitch mapping remain the same. Frequency changes, gain changes and voice transitions are smoothed.
+Edges retain their actual Time-axis duration. Edges parallel to the scanning plane (zero Time-axis extent, with a numerical tolerance) are ignored during playback, avoiding artificial fast portamenti. Frequency changes, gain changes and voice transitions are smoothed.
+
+## Edge range and manual scanning
+
+The Corda-style dual slider selects minimum and maximum edge-length percentiles, defaulting to 5–100%. Length is measured in the original model's world coordinates. Lowering the maximum excludes longer edges and their sustained notes. The displayed unit limits and playable-edge count update immediately; filtering keeps the model's full bounding box for time and pitch mapping.
+
+Auto advances the plane over Duration. Manual holds it at the Position slider's location. Click Sound on to hear the intersecting edges continuously, move Position to scan by hand, and click Mute to silence them. Switching modes preserves whether sound is enabled. Parallel edges remain visible but never produce sound.
 
 The display separates oscillator voices from active edges. `edges voiced` counts all valid active edges represented by the mix; `combined` counts edges sharing voices. Frequencies outside the audio sample-rate limit are excluded. `Output` shows the post-compressor RMS level in dBFS; it measures the browser's audio signal, not the physical speaker volume. Pausing and stopping fade the pool to silence; seeking and resuming reuse it.
 
@@ -76,7 +82,7 @@ Use embedded, uncompressed GLB static meshes. Draco/Meshopt compression, externa
 - `src/mapping.js`: axis, duration and linked pitch calculations.
 - `src/model-edges.js`: edge extraction reused from Corda.
 - `dist/`: built static app, styles and sample model.
-- `src/live-audio.js`: bounded reusable voice pool, density-aware pitch grouping and waveform selection.
+- `src/live-audio.js`: bounded reusable voice pool, duplicate-aware pitch grouping and waveform selection.
 - `tests.mjs`, `glb-test.mjs`, `audio-tests.mjs`: transformation, parsing and dense audio-pool regression tests.
 
 Three.js is bundled locally. Google Fonts supplies the same fonts as Corda, with monospace fallbacks if unavailable.

@@ -1,7 +1,7 @@
 import * as THREE from 'three';
 import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
 import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
-import { collectPlayableEdges } from './model-edges.js';
+import { collectPlayableEdges, filterEdgeRange } from './model-edges.js';
 import { LiveAudioEngine } from './live-audio.js';
 import { axisNames, swapAssignment, parseDuration, frequency, eventFor,
     defaultPitch, changePitch, parsePitch, pitchName } from './mapping.js';
@@ -10,7 +10,8 @@ const $ = id => document.getElementById(id);
 const status = text => $('status').textContent = text;
 const sampleURL = new URL('models/test_plasticNumber.glb', window.location.href);
 let axes = ['TIME', 'PITCH', 'UNUSED'];
-let waveform = 'sine';
+let waveform = 'sine', mode = 'auto';
+let edgeLower = 5, edgeUpper = 100;
 let duration = 60, pitch = defaultPitch(1), customPitch = false;
 let edges = [], box = new THREE.Box3(), events = [];
 let playing = false, offset = 0, started = 0, ctx, master, engine, analyser, audioTimer;
@@ -90,14 +91,26 @@ function makePlane() {
     visual.add(plane);
 }
 
-function rebuild() {
+function rebuild(resume=false) {
+    const wasPlaying=resume&&playing;
     stop(false);
-    events = edges.map((e,id) => ({...eventFor(e, axes, box, duration),id}));
+    if(!edges.length)return;
+    const ranged=filterEdgeRange(edges,edgeLower,edgeUpper);
+    events=ranged.map((e,id)=>{const event=eventFor(e,axes,box,duration);return event?{...event,id}:null;}).filter(Boolean);
+    const center=box.getCenter(new THREE.Vector3());
+    edgeLines.geometry.dispose();
+    edgeLines.geometry=new THREE.BufferGeometry().setFromPoints(ranged.flatMap(e=>[e.a.clone().sub(center),e.b.clone().sub(center)]));
+    $('stats').textContent=events.length.toLocaleString()+' / '+edges.length.toLocaleString()+' playable edges';
+    $('edgeRangeValue').textContent=edgeLower+'–'+edgeUpper+'%';
+    let lowest=ranged.length?Infinity:0,highest=0;
+    for(const edge of ranged){lowest=Math.min(lowest,edge.length);highest=Math.max(highest,edge.length);}
+    $('edgeLengthValue').textContent=lowest.toPrecision(4)+'–'+highest.toPrecision(4)+' units · '+(ranged.length-events.length)+' parallel ignored';
     document.querySelectorAll('[data-role]').forEach(s => s.value = String(axes.indexOf(s.dataset.role)));
     $('axesnote').textContent = axes.flatMap((role,i) => role==='UNUSED'?[]:[`${axisNames[i].toUpperCase()} / ${role}`]).join('\n');
     syncPitch();
     makePlane();
-    status(pitchSpan() > 0 ? 'Ready' : 'Pitch axis has zero length. All edges use minimum pitch.');
+    status(events.length?'Ready':'No playable edges. Adjust axes or Edge range.');
+    if(wasPlaying){started=ctx.currentTime;playing=true;schedule(offset);syncTransport();}
 }
 
 function setModel(root, name) {
@@ -160,14 +173,14 @@ async function sample() {
     }
 }
 
-function time() { return playing ? Math.min(duration, offset + ctx.currentTime - started) : offset; }
+function time() { return playing && mode === 'auto' ? Math.min(duration, offset + ctx.currentTime - started) : offset; }
 function silence() {
     clearInterval(audioTimer); audioTimer = undefined;
     engine?.silence();
 }
 function stop(reset = true) {
     offset = reset ? 0 : time(); playing = false; silence();
-    $('play').textContent = 'Play'; $('play').classList.remove('active');
+    syncTransport();
 }
 async function audio() {
     if (!ctx) {
@@ -184,17 +197,17 @@ function schedule(from) {
     silence();
     const pk = axisNames[axes.indexOf('PITCH')];
     function tick() {
-        const t = Math.min(duration,from + ctx.currentTime - started);
-        if (t >= duration) { stop(false); status('Finished'); return; }
+        const t = mode==='manual'?offset:Math.min(duration,from+ctx.currentTime-started);
+        if (mode==='auto'&&t >= duration) { stop(false); status('Finished'); return; }
         const candidates = [];
         for (const e of events) {
-            if (t < e.start || t >= e.end) continue;
+            if (t < e.start || (mode==='manual'?t>e.end:t>=e.end)) continue;
             const u = (t-e.start)/(e.end-e.start);
             const coordinate = e.a[e.p]+(e.b[e.p]-e.a[e.p])*u;
             candidates.push({ id:e.id, frequency:frequency(coordinate,box.min[pk],pitch.half,pitch.low) });
         }
         engine.update(candidates);
-        status('Playing · '+engine.represented+' edges voiced'+(engine.merged ? ' · '+engine.merged+' combined' : '')+
+        status((mode==='manual'?'Manual':'Playing')+' · '+engine.represented+' edges voiced'+(engine.merged ? ' · '+engine.merged+' combined' : '')+
             (engine.outOfRange ? ' · '+engine.outOfRange+' out of frequency range' : ''));
     }
     tick();
@@ -203,19 +216,20 @@ function schedule(from) {
 
 $('play').onclick = async () => {
     if (playing) { stop(false); status('Paused'); return; }
-    if (!edges.length) return;
+    if (!events.length) return;
     try {
-        await audio(); if (offset >= duration) offset = 0;
+        await audio(); if (mode==='auto'&&offset>=duration)offset=0;
         started = ctx.currentTime; schedule(offset); playing = true;
-        $('play').textContent = 'Pause'; $('play').classList.add('active');
+        syncTransport();
     } catch (e) { status(`Audio error: ${e.message}`); }
 };
 $('stop').onclick = () => { stop(); status('Ready'); };
 $('volume').oninput = () => { if (master) master.gain.setTargetAtTime(+$('volume').value,ctx.currentTime,.02); };
 $('seek').oninput = () => {
+    if(mode==='manual'){offset=+$('seek').value*duration;return;}
     const was = playing; stop(false); offset = +$('seek').value * duration;
     if (was) { started = ctx.currentTime; schedule(offset); playing = true;
-        $('play').textContent = 'Pause'; $('play').classList.add('active'); }
+        syncTransport(); }
 };
 $('duration').oninput = () => {
     const d = parseDuration($('duration').value);
@@ -266,6 +280,25 @@ for (const type of ['sine','sawtooth']) $(type+'Button').onclick = () => {
         $(name+'Button').setAttribute('aria-pressed',String(name===type));
     }
 };
+function syncTransport(){
+    $('play').textContent=mode==='manual'?(playing?'Mute':'Sound on'):(playing?'Pause':'Play');
+    $('play').classList.toggle('active',playing);
+    for(const name of ['auto','manual']){
+        $(name+'Mode').classList.toggle('active',mode===name);
+        $(name+'Mode').setAttribute('aria-pressed',String(mode===name));
+    }
+}
+for(const name of ['auto','manual'])$(name+'Mode').onclick=()=>{
+    const wasPlaying=playing;stop(false);mode=name;syncTransport();
+    if(wasPlaying){started=ctx.currentTime;playing=true;schedule(offset);syncTransport();}
+    else status(mode==='manual'?'Manual · Sound on, then move Position.':'Ready');
+};
+for(const [id,field] of [['edgeLower','min'],['edgeUpper','max']])$(id).oninput=()=>{
+    if(field==='min'){edgeLower=+$(id).value;edgeUpper=Math.max(edgeLower,edgeUpper);}
+    else{edgeUpper=+$(id).value;edgeLower=Math.min(edgeLower,edgeUpper);}
+    $('edgeLower').value=edgeLower;$('edgeUpper').value=edgeUpper;
+    rebuild(true);
+};
 $('load').onclick = () => $('file').click();
 $('file').onchange = () => { load($('file').files[0]); $('file').value = ''; };
 $('demo').onclick = sample; $('fit').onclick = fit;
@@ -287,12 +320,12 @@ new ResizeObserver(() => {
 function animate() {
     requestAnimationFrame(animate);
     const t = time();
-    if (playing && t >= duration) { stop(false); status('Finished'); }
+    if (playing && mode==='auto' && t >= duration) { stop(false); status('Finished'); }
     if (plane) {
         const k = axisNames[axes.indexOf('TIME')], center = box.getCenter(new THREE.Vector3());
         plane.position.set(0,0,0);
         plane.position[k] = box.min[k]+(box.max[k]-box.min[k])*t/duration-center[k];
-        const active = playing ? events.filter(e => t >= e.start && t < e.end) : [];
+        const active=(playing||mode==='manual')?events.filter(e=>t>=e.start&&(mode==='manual'?t<=e.end:t<e.end)):[];
         const positions = activeLines.geometry.attributes.position;
         let index = 0;
         for (const e of active) for (const p of [e.a,e.b]) positions.setXYZ(index++,p.x-center.x,p.y-center.y,p.z-center.z);
@@ -302,6 +335,7 @@ function animate() {
     }
     if (document.activeElement !== $('seek')) $('seek').value = t/duration;
     $('clock').textContent = `${format(t)} / ${format(duration)}`;
+    $('positionValue').textContent=(t/duration*100).toFixed(1)+'%';
     if (analyser) {
         analyser.getFloatTimeDomainData(meterSamples);
         const rms = Math.sqrt(meterSamples.reduce((sum,x)=>sum+x*x,0)/meterSamples.length);
