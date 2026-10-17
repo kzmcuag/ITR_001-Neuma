@@ -59,7 +59,18 @@ input[type=range]::-moz-range-thumb { width: 1px; height: 9px; border: 0; border
 #seek { display: block; margin: 12px 0; }
 #status { color: var(--itr-text-muted); font-size: 11px; overflow-wrap: anywhere; margin-bottom: 8px; }
 #fit { font-size: 11px; }
-.transport { margin-top: 8px; }
+.transport { display: flex; gap: 12px; align-items: center; margin-top: 8px; }
+.transport button { border: 0; background: transparent; padding: 5px; width: 28px; height: 32px; font-family: Arial,sans-serif; font-size: 17px; line-height: 1; }
+.transport button:hover, .transport button.active { background: transparent; }
+.transport button:disabled { opacity: .25; cursor: default; }
+#info { padding-right: 16px; scrollbar-color: #555 transparent; }
+#info::-webkit-scrollbar { width: 3px; }
+#info::-webkit-scrollbar-track { background: transparent; }
+#info::-webkit-scrollbar-thumb { background: #555; border-radius: 0; }
+#info::-webkit-scrollbar-button { display: none; height: 0; }
+@supports selector(::-webkit-scrollbar) { #info { scrollbar-width: auto; scrollbar-color: auto; } }
+#manualHint { position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%); color: var(--itr-text-muted); font-size: 10px; pointer-events: none; max-width: calc(100vw - 32px); text-align: center; }
+canvas.manualScan { cursor: ew-resize; }
 #edgeRangeControls { margin-top: 10px; width: 100%; }
 #edgeRangeValue { float: right; }
 #edgeRangeControls input { touch-action: none; }
@@ -81,7 +92,7 @@ body.drag #view { outline: 1px solid var(--itr-active-ui); outline-offset: -1px;
 @media (pointer: coarse), (max-width: 600px) {
     :root { --itr-ui-top: 16px; --itr-ui-left: 16px; }
     #settingsToggle { display: block; }
-    #info { display: none; top: 56px; left: 16px; padding: 12px; width: 244px; background: rgba(17,17,17,.96); max-height: calc(100dvh - 120px); max-width: calc(100vw - 56px); }
+    #info { display: none; top: 56px; left: 16px; padding: 12px 20px 12px 12px; width: 260px; background: rgba(17,17,17,.96); max-height: calc(100dvh - 120px); max-width: calc(100vw - 56px); }
     body.settingsOpen #info { display: block; }
     button, input:not([type=range]), select { min-height: 32px; }
     input[type=range] { height: 24px; background: linear-gradient(rgba(255,255,255,.35),rgba(255,255,255,.35)) center/100% 1px no-repeat; }

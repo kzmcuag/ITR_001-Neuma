@@ -1,4 +1,4 @@
-# Neuma v0.3.1
+# Neuma v0.3.2
 
 Browser instrument mapping the edges of a 3D model to time and pitch.
 
@@ -66,7 +66,7 @@ The Mode selector contains an indented control panel for Auto or Manual. The lef
 
 The Corda-style dual slider selects minimum and maximum edge-length percentiles, defaulting to 5–100%. Length is measured in the original model's world coordinates. Lowering the maximum excludes longer edges and their sustained notes. The displayed unit limits and playable-edge count update immediately; filtering keeps the model's full bounding box for time and pitch mapping.
 
-Auto advances the plane over Duration. Manual holds it at the Position slider's location. Click Sound on to hear the intersecting edges continuously, move Position to scan by hand, and click Mute to silence them. Switching modes preserves whether sound is enabled. Parallel edges remain visible but never produce sound.
+Auto advances the plane over Duration. Manual holds it at the Position slider's location. Drag in the 3D view to enable sound and move the plane along the projected Time axis. Sound holds at the released position. Right drag still orbits and the wheel zooms. If the Time axis faces the camera, horizontal dragging is used instead. The Position slider remains available. The frameless playback icons are Play (enable sound in Manual), Pause (mute without resetting), and Stop (mute and reset). Switching modes preserves whether sound is enabled. Parallel edges remain visible but never produce sound.
 
 The display separates oscillator voices from active edges. `edges voiced` counts all valid active edges represented by the mix; `combined` counts edges sharing voices. Frequencies outside the audio sample-rate limit are excluded. `Output` shows the post-compressor RMS level in dBFS; it measures the browser's audio signal, not the physical speaker volume. Pausing and stopping fade the pool to silence; seeking and resuming reuse it.
 
