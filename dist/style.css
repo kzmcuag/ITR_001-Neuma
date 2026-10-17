@@ -54,7 +54,7 @@ input[type=range]::-moz-range-thumb { width: 1px; height: 9px; border: 0; border
 #performanceControls { margin-top: 12px; padding-top: 10px; border-top: 1px solid var(--itr-panel-line); }
 .modeToggle { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; }
 .modeToggle > button { min-width: 0; }
-#modePanel { margin-top: 12px; padding: 2px 0 0 12px; border-left: 1px solid var(--itr-panel-line); }
+#modePanel { margin-top: 0; }
 .clockRow { display: flex; justify-content: space-between; color: var(--itr-text-muted); font-size: 11px; margin-top: 8px; font-variant-numeric: tabular-nums; }
 #seek { display: block; margin: 12px 0; }
 #status { color: var(--itr-text-muted); font-size: 11px; overflow-wrap: anywhere; margin-bottom: 8px; }
@@ -70,7 +70,7 @@ input[type=range]::-moz-range-thumb { width: 1px; height: 9px; border: 0; border
 #info::-webkit-scrollbar-button { display: none; height: 0; }
 @supports selector(::-webkit-scrollbar) { #info { scrollbar-width: auto; scrollbar-color: auto; } }
 #manualHint { position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%); color: var(--itr-text-muted); font-size: 10px; pointer-events: none; max-width: calc(100vw - 32px); text-align: center; }
-canvas.manualScan { cursor: ew-resize; }
+.scanView canvas { cursor: ew-resize; }
 #edgeRangeControls { margin-top: 10px; width: 100%; }
 #edgeRangeValue { float: right; }
 #edgeRangeControls input { touch-action: none; }

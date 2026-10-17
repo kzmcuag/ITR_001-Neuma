@@ -207,21 +207,24 @@ function schedule(from) {
             candidates.push({ id:e.id, frequency:frequency(coordinate,box.min[pk],pitch.half,pitch.low) });
         }
         engine.update(candidates);
-        status((mode==='manual'?'Manual':'Playing')+' · '+engine.represented+' edges voiced'+(engine.merged ? ' · '+engine.merged+' combined' : '')+
+        status((mode==='manual'?'Holding':'Playing')+' · '+engine.represented+' edges voiced'+(engine.merged ? ' · '+engine.merged+' combined' : '')+
             (engine.outOfRange ? ' · '+engine.outOfRange+' out of frequency range' : ''));
     }
     tick();
     audioTimer = setInterval(tick,20);
 }
 
-$('play').onclick = async () => {
-    if (playing) return;
+async function startSound() {
     if (!events.length) return;
     try {
         await audio(); if (mode==='auto'&&offset>=duration)offset=0;
         started = ctx.currentTime; schedule(offset); playing = true;
         syncTransport();
     } catch (e) { status(`Audio error: ${e.message}`); }
+}
+$('play').onclick = () => {
+    if(playing&&mode==='auto')return;
+    stop(false);mode='auto';scanDrag=null;startSound();
 };
 $('pause').onclick = () => { stop(false); status('Paused'); };
 $('stop').onclick = () => { stop(); status('Ready'); };
@@ -282,30 +285,15 @@ for (const type of ['sine','sawtooth']) $(type+'Button').onclick = () => {
     }
 };
 function syncTransport(){
-    $('modePanel').setAttribute('aria-label',mode==='auto'?'Auto controls':'Manual controls');
-    $('play').setAttribute('aria-label',mode==='manual'?'Enable sound':'Play');
-    $('play').title=mode==='manual'?'Enable sound':'Play';
-    $('play').classList.toggle('active',playing);
+    $('play').classList.toggle('active',playing&&mode==='auto');
     $('pause').disabled=!playing;
-    $('manualHint').hidden=mode!=='manual';
-    $('dragHelp').textContent=mode==='manual'?'Drag: Scan':'Drag: Orbit';
-    renderer.domElement.classList.toggle('manualScan',mode==='manual');
-    for(const name of ['auto','manual']){
-        $(name+'Mode').classList.toggle('active',mode===name);
-        $(name+'Mode').setAttribute('aria-pressed',String(mode===name));
-    }
 }
-for(const name of ['auto','manual'])$(name+'Mode').onclick=()=>{
-    scanDrag=null;
-    const wasPlaying=playing;stop(false);mode=name;syncTransport();
-    if(wasPlaying){started=ctx.currentTime;playing=true;schedule(offset);syncTransport();}
-    else status(mode==='manual'?'Manual · Drag in the view to scan.':'Ready');
-};
 // Project the Time axis into the view so dragging follows its visible direction.
 let scanDrag=null;
 const scanCanvas=renderer.domElement;
 scanCanvas.addEventListener('pointerdown',e=>{
-    if(mode!=='manual'||e.button!==0||!e.isPrimary||!events.length)return;
+    if(e.button!==0||!e.isPrimary||!events.length)return;
+    stop(false);mode='manual';syncTransport();
     const k=axisNames[axes.indexOf('TIME')],center=box.getCenter(new THREE.Vector3());
     const a=new THREE.Vector3(),b=new THREE.Vector3();
     a[k]=box.min[k]-center[k];b[k]=box.max[k]-center[k];
@@ -318,7 +306,7 @@ scanCanvas.addEventListener('pointerdown',e=>{
         dx:fallback?rect.width*.6:dx,dy:fallback?0:dy};
     scanCanvas.setPointerCapture(e.pointerId);
     e.preventDefault();e.stopImmediatePropagation();
-    $('play').onclick();
+    startSound();
 },true);
 scanCanvas.addEventListener('pointermove',e=>{
     if(!scanDrag||e.pointerId!==scanDrag.id)return;

@@ -1,4 +1,4 @@
-# Neuma v0.3.2
+# Neuma v0.3.3
 
 Browser instrument mapping the edges of a 3D model to time and pitch.
 
@@ -62,11 +62,11 @@ Edges retain their actual Time-axis duration. Edges parallel to the scanning pla
 
 ## Edge range and manual scanning
 
-The Mode selector contains an indented control panel for Auto or Manual. The left menu scrolls vertically only. Edge-range markers align with the track endpoints at 0% and 100%.
+Playback and direct scanning share one interface without a mode selector. The left menu scrolls vertically only. Edge-range markers align with the track endpoints at 0% and 100%.
 
 The Corda-style dual slider selects minimum and maximum edge-length percentiles, defaulting to 5–100%. Length is measured in the original model's world coordinates. Lowering the maximum excludes longer edges and their sustained notes. The displayed unit limits and playable-edge count update immediately; filtering keeps the model's full bounding box for time and pitch mapping.
 
-Auto advances the plane over Duration. Manual holds it at the Position slider's location. Drag in the 3D view to enable sound and move the plane along the projected Time axis. Sound holds at the released position. Right drag still orbits and the wheel zooms. If the Time axis faces the camera, horizontal dragging is used instead. The Position slider remains available. The frameless playback icons are Play (enable sound in Manual), Pause (mute without resetting), and Stop (mute and reset). Switching modes preserves whether sound is enabled. Parallel edges remain visible but never produce sound.
+Play advances the plane over Duration. Dragging in the 3D view freezes automatic playback and directly moves the plane along the projected Time axis, enabling sound. Sound holds at the released position. Play resumes automatic scanning from there; Pause mutes without resetting, and Stop mutes and resets. Right drag orbits, middle drag pans, and the wheel zooms. If the Time axis faces the camera, horizontal dragging is used instead. The Position slider remains available. Parallel edges remain visible but never produce sound.
 
 The display separates oscillator voices from active edges. `edges voiced` counts all valid active edges represented by the mix; `combined` counts edges sharing voices. Frequencies outside the audio sample-rate limit are excluded. `Output` shows the post-compressor RMS level in dBFS; it measures the browser's audio signal, not the physical speaker volume. Pausing and stopping fade the pool to silence; seeking and resuming reuse it.
 
