@@ -281,6 +281,7 @@ for (const type of ['sine','sawtooth']) $(type+'Button').onclick = () => {
     }
 };
 function syncTransport(){
+    $('modePanel').setAttribute('aria-label',mode==='auto'?'Auto controls':'Manual controls');
     $('play').textContent=mode==='manual'?(playing?'Mute':'Sound on'):(playing?'Pause':'Play');
     $('play').classList.toggle('active',playing);
     for(const name of ['auto','manual']){
@@ -297,6 +298,8 @@ for(const [id,field] of [['edgeLower','min'],['edgeUpper','max']])$(id).oninput=
     if(field==='min'){edgeLower=+$(id).value;edgeUpper=Math.max(edgeLower,edgeUpper);}
     else{edgeUpper=+$(id).value;edgeLower=Math.min(edgeLower,edgeUpper);}
     $('edgeLower').value=edgeLower;$('edgeUpper').value=edgeUpper;
+    const range=$('edgeLower').parentElement;
+    range.style.setProperty('--lower',edgeLower/100);range.style.setProperty('--upper',edgeUpper/100);
     rebuild(true);
 };
 $('load').onclick = () => $('file').click();

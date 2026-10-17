@@ -1,2 +1,4 @@
 node_modules/
+.analysis/
+.analysis-deps/
 .sites-runtime/

@@ -1,4 +1,4 @@
-# Neuma v0.3
+# Neuma v0.3.1
 
 Browser instrument mapping the edges of a 3D model to time and pitch.
 
@@ -61,6 +61,8 @@ Audio follows the current timeline every 20ms using a fixed pool of up to 256 si
 Edges retain their actual Time-axis duration. Edges parallel to the scanning plane (zero Time-axis extent, with a numerical tolerance) are ignored during playback, avoiding artificial fast portamenti. Frequency changes, gain changes and voice transitions are smoothed.
 
 ## Edge range and manual scanning
+
+The Mode selector contains an indented control panel for Auto or Manual. The left menu scrolls vertically only. Edge-range markers align with the track endpoints at 0% and 100%.
 
 The Corda-style dual slider selects minimum and maximum edge-length percentiles, defaulting to 5–100%. Length is measured in the original model's world coordinates. Lowering the maximum excludes longer edges and their sustained notes. The displayed unit limits and playable-edge count update immediately; filtering keeps the model's full bounding box for time and pitch mapping.
 
