@@ -8,7 +8,7 @@ import { axisNames, swapAssignment, parseDuration, frequency, eventFor,
 
 const $ = id => document.getElementById(id);
 const status = text => $('status').textContent = text;
-const sampleURL = new URL('models/test_plasticNumber.glb', window.location.href);
+const sampleURL = new URL('models/Sample_UniteRooftop_Xenakis.glb', window.location.href);
 let axes = ['TIME', 'PITCH', 'UNUSED'];
 let waveform = 'sine', mode = 'auto';
 let edgeLower = 5, edgeUpper = 100;
@@ -168,7 +168,7 @@ async function sample() {
         if (!response.ok) throw Error(`HTTP ${response.status}`);
         const gltf = await loader.parseAsync(await response.arrayBuffer(), '');
         if (generation !== loadGeneration) { dispose(gltf.scene); return; }
-        setModel(gltf.scene, 'test_plasticNumber.glb');
+        setModel(gltf.scene, 'Sample_UniteRooftop_Xenakis.glb');
     } catch (e) {
         if (generation === loadGeneration) status(`Sample load error: ${e.message}`);
     }
