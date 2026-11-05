@@ -27,6 +27,7 @@ $('view').append(renderer.domElement);
 const controls = new OrbitControls(camera, renderer.domElement);
 controls.enableDamping = true;
 controls.mouseButtons.RIGHT = THREE.MOUSE.ROTATE;
+controls.mouseButtons.MIDDLE = THREE.MOUSE.PAN;
 renderer.domElement.addEventListener('contextmenu', e => e.preventDefault());
 const visual = new THREE.Group();
 scene.add(visual);
