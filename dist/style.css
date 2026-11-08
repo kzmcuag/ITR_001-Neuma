@@ -73,6 +73,27 @@ summary:focus-visible { outline: 1px solid var(--itr-active-ui); outline-offset:
 #layers label { display: flex; gap: 6px; align-items: baseline; font-size: 11px; margin: 6px 0; overflow-wrap: anywhere; }
 #layers input[type=checkbox] { appearance: auto; width: auto; min-height: auto; flex: 0 0 auto; accent-color: var(--itr-active-ui); }
 #modelInfo, #importInfo { overflow-wrap: anywhere; }
+.halfScale { display: grid; grid-template-columns: 64px 8px minmax(0,1fr) auto; align-items: center; gap: 4px; font-size: 11px; margin: 7px 0; }
+.halfScale span:last-child { max-width: 54px; overflow-wrap: anywhere; font-size: 10px; }
+.soundPresets button, .soundPresets button:hover, .soundPresets button.active { border: 0; background: transparent; }
+.soundPresets button.active { color: var(--itr-active-ui); }
+.soundPresets button:focus-visible { outline: none; text-decoration: underline; text-underline-offset: 4px; }
+#load { border: 1px solid var(--itr-control-border); padding: 6px 8px; text-decoration: none; font-size: 11px; color: var(--itr-control-text); background: var(--itr-control-background); }
+#load.active { color: var(--itr-active-ui); border-color: var(--itr-active-ui); background: var(--itr-active-soft); }
+#sampleDialog { width: min(680px,calc(100vw - 40px)); max-height: calc(100dvh - 40px); overflow-y: auto; border: 1px solid var(--itr-control-border); border-radius: 0; padding: 20px; background: var(--itr-background); color: var(--itr-text); font: inherit; }
+#sampleDialog::backdrop { background: rgba(0,0,0,.7); }
+#sampleDialog { scrollbar-width: thin; scrollbar-color: #555 transparent; }
+#sampleDialog::-webkit-scrollbar { width: 3px; }
+#sampleDialog::-webkit-scrollbar-track { background: transparent; }
+#sampleDialog::-webkit-scrollbar-thumb { background: #555; border-radius: 0; }
+#sampleDialog::-webkit-scrollbar-button { display: none; height: 0; }
+@supports selector(::-webkit-scrollbar) { #sampleDialog { scrollbar-width: auto; scrollbar-color: auto; } }
+.sampleHeader { display: flex; justify-content: space-between; align-items: center; font-size: 10px; letter-spacing: .14em; margin-bottom: 16px; }
+#closeSamples { border: 0; background: transparent; font-size: 20px; padding: 0 4px; }
+#sampleGrid { display: grid; grid-template-columns: repeat(auto-fit,minmax(min(100%,180px),1fr)); gap: 12px; }
+.sampleCard { padding: 8px; text-align: left; display: flex; flex-direction: column; min-width: 0; }
+.sampleCard canvas { width: 100%; height: auto; aspect-ratio: 1.7; pointer-events: none; }
+.sampleName { display: block; font-size: 11px; margin-top: 6px; }
 #info { padding-right: 16px; scrollbar-color: #555 transparent; }
 #info::-webkit-scrollbar { width: 3px; }
 #info::-webkit-scrollbar-track { background: transparent; }

@@ -15,16 +15,17 @@
 <input id="seek" aria-label="Scan position" type="range" min="0" max="1" step="0.001" value="0">
 <div id="status" role="status">Loading sample…</div>
 </div></section>
+<section><div class="sectionTitle">VIEW</div><div class="help"><span id="dragHelp">Drag: Scan</span><br>Right drag: Orbit<br>Middle drag: Pan<br>Wheel: Zoom</div><button class="textButton" id="fit">Fit model</button></section>
 <section><div class="sectionTitle">MODEL</div>
-<label class="srOnly" for="sampleSelect">Sample model</label><select id="sampleSelect"><option value="plastic">Plastic number</option><option value="windows">Window study</option><option value="steps">Stepped study</option><option value="curves">Curve study</option><option value="custom" disabled>Local file</option></select>
-<div id="modelRow"><span id="model">Model: Loading</span><button id="load">Open GLB / 3DM</button></div>
+<div class="modeToggle" role="group" aria-label="Model source"><button id="sampleButton" class="active" aria-pressed="true">Sample</button><button id="load" aria-pressed="false">Upload</button></div>
+<div id="modelRow"><span id="model">Model: Loading</span></div><div class="small">GLB / 3DM</div>
 </section>
 <section><div class="sectionTitle">TIME / PITCH</div>
 <div class="row"><label for="duration">Duration</label><input id="duration" aria-label="Duration minutes and seconds" value="1:00" spellcheck="false"></div>
-<div class="row"><label for="range">Range</label><div class="rangeValue"><input id="range" aria-label="Pitch range in semitones" type="number" min="1" max="96" step="1" value="48"><span>semitones</span></div></div>
+<div class="halfScale"><label for="half">Half tone</label><span>=</span><input id="half" aria-label="Half tone units" type="number" min="0" step="any"><span id="halfUnits">units</span></div>
 </section>
-<section><div class="sectionTitle">SOUND</div><div class="modeToggle" role="group" aria-label="Sound preset"><button id="pluckButton" class="active" aria-pressed="true">Pluck</button><button id="padButton" aria-pressed="false">Pad</button></div>
-<div class="small" id="presetHint">Sine-based · quick decay / soft sustain</div>
+<section><div class="sectionTitle">SOUND</div><div class="modeToggle soundPresets" role="group" aria-label="Sound preset"><button id="pluckButton" class="active" aria-pressed="true">Pluck</button><button id="padButton" aria-pressed="false">Pad</button></div>
+<div class="small" id="presetHint">Sine · quick decay</div>
 <div class="row"><label for="volume">Volume</label><input id="volume" aria-label="Volume" type="range" min="0" max="0.5" step="0.01" value="0.12"></div></section>
 <details id="advanced"><summary>Details</summary>
 <section><div class="sectionTitle">MODEL INFO</div><div id="modelInfo" class="small"></div><div id="importInfo" class="small"></div><div id="stats"></div></section>
@@ -32,8 +33,8 @@
 <section><div class="sectionTitle">AXES</div>
 <div class="row"><label for="timeAxis">Time</label><select id="timeAxis" aria-label="Time axis" data-role="TIME"></select></div>
 <div class="row"><label for="pitchAxis">Pitch</label><select id="pitchAxis" aria-label="Pitch axis" data-role="PITCH"></select></div></section>
-<section><div class="sectionTitle">PITCH</div>
-<div class="row pitchRow"><label for="half">Half tone</label><input id="half" aria-label="Half tone units" type="number" min="0" step="any"><span id="halfUnits">units</span></div>
+<section><div class="sectionTitle">PITCH</div><div class="row"><label for="range">Range</label><div class="rangeValue"><input id="range" aria-label="Pitch range in semitones" type="number" min="1" max="96" step="1" value="48"><span>semitones</span></div></div>
+
 <div class="row pitchRow"><label for="low">Minimum</label><input id="low" aria-label="Minimum pitch" spellcheck="false"><span id="lowNote"></span></div>
 <div class="row pitchRow"><label for="high">Maximum</label><input id="high" aria-label="Maximum pitch" spellcheck="false"><span id="highNote"></span></div>
 <div class="small">Note or Hz · e.g. D4 / 293.665</div><div class="small" id="center"></div><button class="textButton" id="auto">Reset: midpoint D4</button></section>
@@ -41,9 +42,10 @@
 <div class="dualRange" role="group" aria-label="Edge length range"><input id="edgeLower" type="range" min="0" max="100" value="5" aria-label="Minimum edge length percentile"><input id="edgeUpper" type="range" min="0" max="100" value="95" aria-label="Maximum edge length percentile"></div><div id="edgeLengthValue" class="small"></div></div>
 <section><div class="sectionTitle">AUDIO</div><div id="voices" class="small">0 voices</div><div id="intersections" class="small">0 intersecting edges</div><div id="audioLevel" class="small">Output: silent</div></section>
 </details>
-<section><div class="sectionTitle">VIEW</div><div class="help"><span id="dragHelp">Drag: Scan</span><br>Right drag: Orbit<br>Middle drag: Pan<br>Wheel: Zoom</div><button class="textButton" id="fit">Fit model</button></section>
+
 </div>
 <div id="manualHint">Drag: Scan · Right drag: Orbit · Wheel: Zoom</div><div id="axesnote"></div><div id="projectName">Instrumentarium</div>
+<dialog id="sampleDialog" aria-labelledby="sampleTitle"><div class="sampleHeader"><span id="sampleTitle">CHOOSE A SAMPLE</span><button id="closeSamples" aria-label="Close samples">×</button></div><div id="sampleGrid"></div></dialog>
 <input hidden id="file" type="file" accept=".glb,.3dm">
 <script type="module" src="app.js?v=0.4"></script>
 </body></html>

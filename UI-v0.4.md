@@ -13,32 +13,33 @@ NEUMA v0.4
 Ready
 ──────────────────────────────
 
-MODEL
-[ Plastic number           ▼ ]
-  Window study
-  Stepped study
-  Curve study
-Model: test_plasticNumber.glb
-Open GLB / 3DM
-
-TIME / PITCH
-Duration                [1:00]
-Range                 [48] semitones
-
-SOUND
-[ Pluck ]       [ Pad ]
-Sine-based · quick decay / soft sustain
-Volume       ─────│───────────
-
-▸ Details
-
 VIEW
 Drag: Scan
 Right drag: Orbit
 Middle drag: Pan
 Wheel: Zoom
 Fit model
+
+MODEL
+[ Sample ]      [ Upload ]
+Model: Sample_UniteRooftop_Xenakis.glb
+GLB / 3DM
+
+TIME / PITCH
+Duration                [1:00]
+Half tone =         [数値] units
+
+SOUND
+  Pluck           Pad          選択中は緑の文字のみ
+Sine · quick decay
+Volume       ─────│───────────
+
+▸ Details
 ```
+
+Sampleを押すとポップアップ。各モデルの形状プレビュー付きカードから選択。
+屋上幼稚園 / Plastic number / Window study / Stepped study / Curve study。
+Uploadを押すとファイル選択。`.glb` / `.3dm` に対応。
 
 ## Detailsを開いたとき
 
@@ -58,7 +59,7 @@ Time                    [X ▼]
 Pitch                   [Y ▼]  3DM初期値はZ
 
 PITCH
-Half tone             [値] units  3DMはmm等の元単位
+Range                 [48] semitones
 Minimum               [値] D2
 Maximum               [値] D6
 Note or Hz · e.g. D4 / 293.665
@@ -83,7 +84,8 @@ Output: silent
 - ドラッグすると手動走査。離した位置でPadは持続、Pluckは減衰。
 - ▶は現在位置から自動再生。⏸は消音、■は消音して先頭へ戻る。
 - 同音高の重なりは一音にまとめる。斜線の音高変化ではPluckを再発音しない。
-- Rangeは音高の中央値を保って音域幅を変更する。
+- 基本画面のHalf toneは、半音あたりの寸法を直接入力する。3DMではmm等の元単位を表示。
+- DetailsのRangeは音高の中央値を保って音域幅を変更する。どちらも最低・最高音と連動。
 - 3DMは線・ポリラインとレイヤー選択に対応。面・メッシュ・ブロック・曲がったNURBSは今回対象外。
 - Window / Stepped / Curveは抽象的な形状サンプル。特定の建築の再現モデルではない。
 
@@ -94,6 +96,8 @@ Output: silent
 - 再生3アイコンはすべて16×16pxのSVG、同じ28×32pxの操作領域。
 - 再生欄は上部固定。縦スクロールのみ、右余白16px、スクロールバー3px。
 - Detailsは初期状態で閉じる。初見で必要な操作と専門的な設定を分ける。
+- ビューナビゲーションは再生欄の直下。
+- 音色の選択表示は緑色のみ。枠・選択背景なし。キーボードフォーカスは下線。
 - Edge Rangeの初期値を5–95%に変更。
 
 ## 変更希望

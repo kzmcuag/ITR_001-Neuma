@@ -8,3 +8,9 @@ const bin=Buffer.from(coords.buffer);
 const doc={asset:{version:'2.0'},scene:0,scenes:[{nodes:[0]}],nodes:[{mesh:0,translation:[10,20,30]}],meshes:[{primitives:[{attributes:{POSITION:0}}]}],buffers:[{byteLength:bin.length}],bufferViews:[{buffer:0,byteOffset:0,byteLength:bin.length,target:34962}],accessors:[{bufferView:0,componentType:5126,count:3,type:'VEC3',min:[0,0,0],max:[4,3,2]}]};
 const raw=Buffer.from(JSON.stringify(doc));const json=Buffer.concat([raw,Buffer.alloc((4-raw.length%4)%4,32)]);const bytes=Buffer.alloc(12+8+json.length+8+bin.length);bytes.writeUInt32LE(0x46546c67,0);bytes.writeUInt32LE(2,4);bytes.writeUInt32LE(bytes.length,8);bytes.writeUInt32LE(json.length,12);bytes.writeUInt32LE(0x4e4f534a,16);json.copy(bytes,20);bytes.writeUInt32LE(bin.length,20+json.length);bytes.writeUInt32LE(0x004e4942,24+json.length);bin.copy(bytes,28+json.length);
 const gltf=await new GLTFLoader().parseAsync(bytes.buffer.slice(bytes.byteOffset,bytes.byteOffset+bytes.byteLength),'');const result=collectPlayableEdges(gltf.scene);assert.equal(result.segments.length,3);assert.equal(Math.min(...result.segments.flatMap(e=>[e.a.x,e.b.x])),10);if(process.argv.includes('--fixture')){fs.mkdirSync('../../work/fixtures',{recursive:true});fs.writeFileSync('../../work/fixtures/triangle.glb',bytes);}console.log('Embedded GLB parsing and transformed edge extraction passed.');
+for(const file of ['Sample_UniteRooftop_Xenakis.glb','test_plasticNumber.glb']){
+    const data=fs.readFileSync('dist/models/'+file);
+    const model=await new GLTFLoader().parseAsync(data.buffer.slice(data.byteOffset,data.byteOffset+data.byteLength),'');
+    assert.ok(collectPlayableEdges(model.scene).segments.length>0,file+' must have usable edges');
+}
+console.log('Both supplied GLB samples parse and produce usable edges.');

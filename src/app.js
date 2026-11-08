@@ -3,13 +3,14 @@ import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
 import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
 import { collectPlayableEdges, filterEdgeRange } from './model-edges.js';
 import { LiveAudioEngine } from './live-audio.js';
-import { studySegments } from './samples.js';
+import { studySegments, SAMPLE_MODELS } from './samples.js';
 import { axisNames, swapAssignment, parseDuration, frequency, eventFor, scanEvents,
     defaultPitch, changePitch, parsePitch, pitchName } from './mapping.js';
 
 const $ = id => document.getElementById(id);
 const status = text => $('status').textContent = text;
-const sampleURL = new URL('models/test_plasticNumber.glb', window.location.href);
+let selectedSample='rooftop';
+const previewCache=new Map();
 let axes = ['TIME', 'PITCH', 'UNUSED'];
 let preset = 'pluck', mode = 'auto';
 let edgeLower = 5, edgeUpper = 95;
@@ -200,7 +201,6 @@ async function load(file) {
     stop(false); status('Loading model…');
     try {
         if (file.size > 100*1024*1024) throw Error('Choose a model smaller than 100 MB.');
-        $('sampleSelect').value='custom';
         const buffer=await file.arrayBuffer();
         if(/\.3dm$/i.test(file.name)){
             const model=await decodeRhino(buffer);
@@ -208,11 +208,13 @@ async function load(file) {
             const segments=rawSegments(model.segments);
             installSegments(segments,boundsFor(segments),file.name,{...model,rhino:true});
             $('importInfo').textContent=`3DM lines / polylines · ${model.skipped} unsupported objects skipped · ${model.hidden} hidden / definition objects skipped`;
+            setSource('upload');
             return;
         }
         const gltf = await loader.parseAsync(buffer, '');
         if (generation !== loadGeneration) { dispose(gltf.scene); return; }
         setModel(gltf.scene, file.name);
+        setSource('upload');
     } catch (e) {
         if (generation === loadGeneration) status(`Load error: ${e.message}`);
     }
@@ -222,20 +224,21 @@ async function sample() {
     const generation = ++loadGeneration;
     stop(false); status('Loading sample…');
     try {
-        const kind=$('sampleSelect').value;
-        if(kind==='custom')return;
-        if(kind!=='plastic'){
+        const kind=selectedSample,definition=SAMPLE_MODELS.find(s=>s.id===kind);
+        if(!definition.file){
             const segments=rawSegments(studySegments(kind));
             const name={windows:'Window study',steps:'Stepped study',curves:'Curve study'}[kind];
             installSegments(segments,boundsFor(segments),name);
-            $('importInfo').textContent='Abstract geometry study';return;
+            $('importInfo').textContent='Abstract geometry study';previewCache.set(kind,Promise.resolve(segments));setSource('sample');return;
         }
-        const response = await fetch(sampleURL);
+        const response = await fetch(new URL('models/'+definition.file,window.location.href));
         if (!response.ok) throw Error(`HTTP ${response.status}`);
         const gltf = await loader.parseAsync(await response.arrayBuffer(), '');
         if (generation !== loadGeneration) { dispose(gltf.scene); return; }
-        setModel(gltf.scene, 'test_plasticNumber.glb');
+        setModel(gltf.scene, definition.file);
         $('importInfo').textContent='Sample GLB · source coordinate units';
+        previewCache.set(kind,Promise.resolve(sourceEdges));
+        setSource('sample');
     } catch (e) {
         if (generation === loadGeneration) status(`Sample load error: ${e.message}`);
     }
@@ -357,6 +360,7 @@ document.querySelectorAll('[data-role]').forEach(select => {
 });
 for (const type of ['pluck','pad']) $(type+'Button').onclick = () => {
     preset = type; engine?.setPreset(type);
+    $('presetHint').textContent=type==='pluck'?'Sine · quick decay':'Sine · soft sustain';
     for (const name of ['pluck','pad']) {
         $(name+'Button').classList.toggle('active',name===type);
         $(name+'Button').setAttribute('aria-pressed',String(name===type));
@@ -410,8 +414,61 @@ for(const [id,field] of [['edgeLower','min'],['edgeUpper','max']])$(id).oninput=
     rebuild(true);
 };
 $('load').onclick = () => $('file').click();
+function setSource(source){
+    for(const [id,value] of [['sampleButton','sample'],['load','upload']]){
+        $(id).classList.toggle('active',source===value);
+        $(id).setAttribute('aria-pressed',String(source===value));
+    }
+}
+function previewSegments(definition){
+    if(!previewCache.has(definition.id))previewCache.set(definition.id,(async()=>{
+        if(!definition.file)return rawSegments(studySegments(definition.id));
+        const response=await fetch(new URL('models/'+definition.file,window.location.href));
+        if(!response.ok)throw Error('Preview unavailable.');
+        const gltf=await loader.parseAsync(await response.arrayBuffer(),'');
+        try{return collectPlayableEdges(gltf.scene).segments;}finally{dispose(gltf.scene);}
+    })());
+    return previewCache.get(definition.id);
+}
+function drawPreview(canvas,segments){
+    const bounds=boundsFor(segments),center=bounds.getCenter(new THREE.Vector3());
+    const points=segments.flatMap(e=>[e.a.clone().sub(center),e.b.clone().sub(center)]);
+    const size=bounds.getSize(new THREE.Vector3()).length()||1;
+    const eye=new THREE.PerspectiveCamera(45,1.7,size/10000,size*100);
+    eye.position.set(size*.85,size*.6,size*.95);eye.lookAt(0,0,0);eye.updateMatrixWorld();
+    const projected=points.map(p=>p.project(eye));
+    const ext=new THREE.Box3().setFromPoints(projected),span=ext.getSize(new THREE.Vector3());
+    const scale=Math.min((canvas.width-32)/(span.x||1),(canvas.height-24)/(span.y||1));
+    const mid=ext.getCenter(new THREE.Vector3()),c=canvas.getContext('2d');
+    c.clearRect(0,0,canvas.width,canvas.height);c.strokeStyle='#aaa';c.lineWidth=1;
+    c.beginPath();
+    for(let i=0;i<projected.length;i+=2){
+        const a=projected[i],b=projected[i+1];
+        c.moveTo(canvas.width/2+(a.x-mid.x)*scale,canvas.height/2-(a.y-mid.y)*scale);
+        c.lineTo(canvas.width/2+(b.x-mid.x)*scale,canvas.height/2-(b.y-mid.y)*scale);
+    }
+    c.stroke();
+}
+for(const definition of SAMPLE_MODELS){
+    const card=document.createElement('button'),canvas=document.createElement('canvas'),name=document.createElement('span'),description=document.createElement('span');
+    card.className='sampleCard';card.type='button';card.setAttribute('aria-label',definition.name);
+    canvas.width=340;canvas.height=200;canvas.setAttribute('aria-hidden','true');
+    name.className='sampleName';name.textContent=definition.name;
+    description.className='small';description.textContent=definition.description;
+    card.append(canvas,name,description);$('sampleGrid').append(card);
+    card.onclick=()=>{selectedSample=definition.id;$('sampleDialog').close();sample();};
+}
+$('sampleButton').onclick=()=>{
+    stop(false);$('sampleDialog').showModal();
+    const cards=[...$('sampleGrid').children];
+    SAMPLE_MODELS.forEach((definition,i)=>{
+        cards[i].classList.toggle('active',definition.id===selectedSample&&$('sampleButton').getAttribute('aria-pressed')==='true');
+        previewSegments(definition).then(segments=>drawPreview(cards[i].querySelector('canvas'),segments)).catch(()=>{cards[i].querySelector('.small').textContent='Preview unavailable';previewCache.delete(definition.id);});
+    });
+};
+$('closeSamples').onclick=()=>$('sampleDialog').close();
 $('file').onchange = () => { load($('file').files[0]); $('file').value = ''; };
-$('sampleSelect').onchange=sample; $('fit').onclick = fit;
+$('fit').onclick = fit;
 $('settingsToggle').onclick = () => {
     const open = document.body.classList.toggle('settingsOpen');
     $('settingsToggle').setAttribute('aria-expanded',String(open));

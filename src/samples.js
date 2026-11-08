@@ -1,4 +1,11 @@
 // Abstract studies, not reconstructions of named buildings.
+export const SAMPLE_MODELS=[
+    {id:'rooftop',name:'Unité rooftop',description:'Rezé · rooftop kindergarten',file:'Sample_UniteRooftop_Xenakis.glb'},
+    {id:'plastic',name:'Plastic number',description:'Proportion study',file:'test_plasticNumber.glb'},
+    {id:'windows',name:'Window study',description:'Repetition and rhythm'},
+    {id:'steps',name:'Stepped study',description:'Changing heights'},
+    {id:'curves',name:'Curve study',description:'Flowing contours'}
+];
 export function studySegments(kind){
     const segments=[];
     const line=(a,b)=>segments.push({a,b});

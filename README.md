@@ -18,11 +18,11 @@ Open `http://127.0.0.1:4173/`. `npm test` checks mapping, linked pitch controls,
 
 ## Basic and detailed controls
 
-The basic view contains playback, sample selection, Duration, pitch Range (1–96 semitones), Pluck/Pad and Volume. Details contains axes, linked pitch controls, edge range, 3DM layers, dimensions and audio diagnostics. Range edits preserve the current musical midpoint. Details starts collapsed.
+The basic view contains playback, view navigation guidance, Sample/Upload model source, Duration, Half tone in model units, Pluck/Pad and Volume. Details contains axes, total pitch Range (1–96 semitones), linked minimum/maximum pitch, edge range, 3DM layers, dimensions and audio diagnostics. Range edits preserve the current musical midpoint. Details starts collapsed.
 
 ## Model and navigation
 
-The supplied `test_plasticNumber.glb` loads automatically. The sample selector also provides Window, Stepped and Curve studies; these are abstract geometry, not named buildings. Open GLB / 3DM or drag and drop loads a local file. Local files are processed in the browser and are not uploaded. Drag or right drag to orbit, middle drag to pan, wheel to zoom. On mobile, open `[setting]` to access controls; pinch to zoom.
+The supplied `Sample_UniteRooftop_Xenakis.glb` loads automatically. Sample opens a visual popup for the rooftop model, Plastic number, and Window, Stepped and Curve studies. The last three are abstract geometry, not named buildings. Upload or drag and drop loads a local GLB/3DM file. Local files are processed in the browser and are not uploaded. Drag or right drag to orbit, middle drag to pan, wheel to zoom. On mobile, open `[setting]` to access controls; pinch to zoom.
 
 The interface follows Corda's design tokens: `#111111` background, IBM Plex Mono, 12px main text, 11px controls, 10px section labels, 220px panel at top 26px / left 28px, and green interaction accents. All app text is English. Instrumentarium uses Inter as in Corda.
 
