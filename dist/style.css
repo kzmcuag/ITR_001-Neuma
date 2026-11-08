@@ -75,8 +75,8 @@ summary:focus-visible { outline: 1px solid var(--itr-active-ui); outline-offset:
 #modelInfo, #importInfo { overflow-wrap: anywhere; }
 .halfScale { display: grid; grid-template-columns: 64px 8px minmax(0,1fr) auto; align-items: center; gap: 4px; font-size: 11px; margin: 7px 0; }
 .halfScale span:last-child { max-width: 54px; overflow-wrap: anywhere; font-size: 10px; }
-.soundPresets button, .soundPresets button:hover, .soundPresets button.active { border: 0; background: transparent; }
-.soundPresets button.active { color: var(--itr-active-ui); }
+.soundPresets button { border: 1px solid var(--itr-control-border); background: var(--itr-control-background); }
+.soundPresets button:hover, .soundPresets button.active { border-color: var(--itr-active-ui); color: var(--itr-active-ui); background: var(--itr-active-soft); }
 .soundPresets button:focus-visible { outline: none; text-decoration: underline; text-underline-offset: 4px; }
 #load { border: 1px solid var(--itr-control-border); padding: 6px 8px; text-decoration: none; font-size: 11px; color: var(--itr-control-text); background: var(--itr-control-background); }
 #load.active { color: var(--itr-active-ui); border-color: var(--itr-active-ui); background: var(--itr-active-soft); }

@@ -4,6 +4,7 @@ import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
 import { collectPlayableEdges, filterEdgeRange } from './model-edges.js';
 import { LiveAudioEngine } from './live-audio.js';
 import { studySegments, SAMPLE_MODELS } from './samples.js';
+import {fitModelCamera} from './model-view.js';
 import { axisNames, swapAssignment, parseDuration, frequency, eventFor, scanEvents,
     defaultPitch, changePitch, parsePitch, pitchName } from './mapping.js';
 
@@ -16,6 +17,7 @@ let preset = 'pluck', mode = 'auto';
 let edgeLower = 5, edgeUpper = 95;
 let sourceEdges=[],selectedLayers=new Set(),modelUnits='units';
 let rhinoWorker;
+let modelZUp=false;
 let duration = 60, pitch = defaultPitch(1), customPitch = false;
 let edges = [], box = new THREE.Box3(), events = [];
 let playing = false, offset = 0, started = 0, ctx, master, engine, analyser, audioTimer;
@@ -28,10 +30,14 @@ const camera = new THREE.PerspectiveCamera(45, 1, .01, 10000);
 const renderer = new THREE.WebGLRenderer({ antialias: true });
 renderer.setPixelRatio(Math.min(devicePixelRatio, 2));
 $('view').append(renderer.domElement);
-const controls = new OrbitControls(camera, renderer.domElement);
-controls.enableDamping = true;
-controls.mouseButtons.RIGHT = THREE.MOUSE.ROTATE;
-controls.mouseButtons.MIDDLE = THREE.MOUSE.PAN;
+function makeControls(){
+    const navigation=new OrbitControls(camera,renderer.domElement);
+    navigation.enableDamping=true;
+    navigation.mouseButtons.RIGHT=THREE.MOUSE.ROTATE;
+    navigation.mouseButtons.MIDDLE=THREE.MOUSE.PAN;
+    return navigation;
+}
+let controls=makeControls();
 renderer.domElement.addEventListener('contextmenu', e => e.preventDefault());
 const visual = new THREE.Group();
 scene.add(visual);
@@ -50,12 +56,8 @@ function dispose(root) {
 }
 
 function fit() {
-    const size = box.getSize(new THREE.Vector3()).length() || 1;
     controls.target.set(0, 0, 0);
-    camera.position.set(size * .85, size * .6, size * .95);
-    camera.near = Math.max(size / 10000, .000001);
-    camera.far = size * 100;
-    camera.updateProjectionMatrix();
+    fitModelCamera(camera,box,modelZUp);
     controls.update();
 }
 
@@ -137,6 +139,12 @@ function setModel(root, name) {
 function installSegments(extracted,bounds,name,{units='units',layers=[],rhino=false}={}){
     if(!extracted.length||bounds.isEmpty())throw Error('No usable line segments.');
     stop();
+    if(modelZUp!==rhino){
+        controls.dispose();modelZUp=rhino;
+        camera.up.set(0,rhino?0:1,rhino?1:0);
+        // OrbitControls caches a quaternion from camera.up in its constructor.
+        controls=makeControls();
+    }
     dispose(visual); visual.clear(); plane = null;
     box.copy(bounds); sourceEdges=extracted;modelUnits=units;
     const preferred=layers.filter(l=>l.visible&&/(^|::)neuma$/i.test(l.name));

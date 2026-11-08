@@ -1,4 +1,4 @@
-# Neuma v0.4.1
+# Neuma v0.4.2
 
 Browser instrument mapping the edges of a 3D model to time and pitch.
 
@@ -82,7 +82,7 @@ Use embedded, uncompressed GLB static meshes. Draco/Meshopt compression, externa
 
 ## Rhino 3DM
 
-Uses locally bundled rhino3dm 8.4.0 (McNeel/openNURBS) in a disposable Web Worker. Native units and XYZ coordinates are preserved, without silently rescaling to meters. Details shows the source unit and X/Y/Z dimensions; Half tone uses that unit. Initial 3DM mapping is X=Time, Z=Pitch. GLB keeps X=Time, Y=Pitch and reports source coordinate units.
+Uses locally bundled rhino3dm 8.4.0 (McNeel/openNURBS) in a disposable Web Worker. Native units and XYZ coordinates are preserved, without silently rescaling to meters. 3DM uses a Z-up camera and orbit axis; GLB and built-in studies use Y-up. Switching formats rebuilds OrbitControls so its cached up-axis quaternion matches the model. No geometry rotation or pitch-coordinate conversion is applied. Details shows the source unit and X/Y/Z dimensions; Half tone uses that unit. Initial 3DM mapping is X=Time, Z=Pitch. GLB keeps X=Time, Y=Pitch and reports source coordinate units.
 
 The importer reads explicit lines/polylines, mesh objects, and saved Render/Preview meshes on BRep faces and extrusions. At load time it extracts naked boundaries and creases of at least 15 degrees. Triangulation diagonals and smooth shared mesh edges are excluded. Saved face meshes of the same BRep are processed together so matching smooth seams disappear. This is static edge extraction, not a camera-dependent silhouette. Curved standalone NURBS, blocks and SubD remain unsupported; counts are reported. Instance-definition geometry is excluded to avoid playing untransformed block contents.
 

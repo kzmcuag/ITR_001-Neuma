@@ -41,3 +41,16 @@ assert.equal(scanEvents([tiny],.02,0,true,true).length,0);
 assert.equal(scanEvents([tiny],.02,0,false,false).length,0);
 assert.equal(scanEvents([tiny],.009,0,true,false)[0].u,1);
 console.log('Sub-tick Pluck events are caught once; manual scans only play current intersections.');
+
+const {fitModelCamera}=await import('./src/model-view.js');
+const nativeBox=new THREE.Box3(new THREE.Vector3(0,0,0),new THREE.Vector3(2,1,8)),savedBox=nativeBox.clone();
+const viewCamera=new THREE.PerspectiveCamera(45,1,.01,1000);
+for(const zUp of [true,false,true]){
+    fitModelCamera(viewCamera,nativeBox,zUp);
+    const vertical=new THREE.Vector3(0,zUp?0:1,zUp?1:0).project(viewCamera);
+    const origin=new THREE.Vector3().project(viewCamera);
+    assert.ok(Math.abs(vertical.x-origin.x)<1e-10);assert.ok(vertical.y>origin.y);
+    assert.deepEqual(viewCamera.up.toArray(),zUp?[0,0,1]:[0,1,0]);
+    assert.ok(nativeBox.equals(savedBox));
+}
+console.log('Rhino Z-up and GLB Y-up project vertically across repeated switches without changing model bounds.');
