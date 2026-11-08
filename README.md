@@ -1,4 +1,4 @@
-# Neuma v0.4
+# Neuma v0.4.1
 
 Browser instrument mapping the edges of a 3D model to time and pitch.
 
@@ -84,11 +84,13 @@ Use embedded, uncompressed GLB static meshes. Draco/Meshopt compression, externa
 
 Uses locally bundled rhino3dm 8.4.0 (McNeel/openNURBS) in a disposable Web Worker. Native units and XYZ coordinates are preserved, without silently rescaling to meters. Details shows the source unit and X/Y/Z dimensions; Half tone uses that unit. Initial 3DM mapping is X=Time, Z=Pitch. GLB keeps X=Time, Y=Pitch and reports source coordinate units.
 
-The first importer reads explicit lines and polylines (including exactly polylinear curves). Meshes, surfaces, blocks and curved NURBS are skipped, with a count shown in Details. It does not extract BRep edges or approximate curved NURBS. Instance-definition geometry is excluded to avoid playing untransformed block contents.
+The importer reads explicit lines/polylines, mesh objects, and saved Render/Preview meshes on BRep faces and extrusions. At load time it extracts naked boundaries and creases of at least 15 degrees. Triangulation diagonals and smooth shared mesh edges are excluded. Saved face meshes of the same BRep are processed together so matching smooth seams disappear. This is static edge extraction, not a camera-dependent silhouette. Curved standalone NURBS, blocks and SubD remain unsupported; counts are reported. Instance-definition geometry is excluded to avoid playing untransformed block contents.
+
+After extraction, reversed/identical edges are deduplicated within each layer, and degree-two straight chains are joined with a scale-relative geometric tolerance. Branch junctions, actual bends and independent layer membership are preserved. The browser does not remesh NURBS. If a surface has no saved mesh, Details and the load status report it: show the object in Shaded mode and save render meshes in Rhino (avoid SaveSmall), or use Mesh and save the mesh objects. See [McNeel SaveSmall documentation](https://wiki.mcneel.com/rhino/savesmall).
 
 Details > Layers provides multiple layer checkboxes. Visible NEUMA layers are preferred initially; otherwise visible layers are selected. Hidden objects are skipped, hidden layers are initially unchecked, and locked visible curves can be read. Layer changes retain the original imported bounding box and linked pitch settings. Selecting no layers produces silence.
 
-The file is decoded locally in the browser, with a 100MB file / 100,000-segment limit and a 60-second decoding timeout.
+The file is decoded locally in the browser, with a 100MB file limit, 200,000 input mesh faces / 400,000 input vertices, 300,000 raw edges, 100,000 final segments, and a 60-second decoding timeout. Exceeding a limit returns an actionable error rather than silently truncating the model.
 
 ## Deployment
 
@@ -101,6 +103,6 @@ The file is decoded locally in the browser, with a 100MB file / 100,000-segment 
 - `src/model-edges.js`: edge extraction reused from Corda.
 - `dist/`: built static app, styles and sample model.
 - `src/live-audio.js`: bounded reusable voice pool, duplicate-aware pitch grouping and sine-based envelopes.
-- `tests.mjs`, `glb-test.mjs`, `audio-tests.mjs`, `rhino-tests.mjs`: transformation, parsing and dense audio-pool regression tests.
+- `tests.mjs`, `glb-test.mjs`, `audio-tests.mjs`, `rhino-tests.mjs`, `edge-processing-tests.mjs`: transformation, parsing and dense audio-pool regression tests.
 
 Three.js and rhino3dm JS/WASM are bundled locally. rhino3dm license: `dist/vendor/rhino/LICENSE`. Google Fonts supplies the same fonts as Corda, with monospace fallbacks if unavailable.

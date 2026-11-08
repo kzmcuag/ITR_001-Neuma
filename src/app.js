@@ -207,7 +207,11 @@ async function load(file) {
             if(generation!==loadGeneration)return;
             const segments=rawSegments(model.segments);
             installSegments(segments,boundsFor(segments),file.name,{...model,rhino:true});
-            $('importInfo').textContent=`3DM lines / polylines · ${model.skipped} unsupported objects skipped · ${model.hidden} hidden / definition objects skipped`;
+            $('importInfo').textContent=`3DM · ${model.curveObjects} curves · ${model.meshObjects} meshes · ${model.surfaceObjects} surfaces with saved meshes. `+
+                `${model.duplicates} duplicate edges removed · ${model.merged} straight joins. `+
+                `${model.skipped} unsupported objects · ${model.hidden} hidden / definition objects skipped.`+
+                (model.missingMeshes?` ${model.missingMeshes} faces / extrusions have no saved display mesh. In Rhino, show Shaded mode and save with render meshes, or use Mesh and save the mesh objects.`:'');
+            if(model.missingMeshes)status(`Loaded · ${model.missingMeshes} faces / extrusions need saved meshes. See Details.`);
             setSource('upload');
             return;
         }

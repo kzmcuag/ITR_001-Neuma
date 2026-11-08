@@ -1,10 +1,10 @@
 <!DOCTYPE html>
-<html lang="en"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><title>Neuma v0.4</title><link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin><link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=Inter:wght@400&display=swap" rel="stylesheet"><link rel="stylesheet" href="style.css?v=0.4"></head>
+<html lang="en"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><title>Neuma v0.4.1</title><link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin><link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=Inter:wght@400&display=swap" rel="stylesheet"><link rel="stylesheet" href="style.css?v=0.4.1"></head>
 <body>
 <div id="view" class="scanView"></div>
 <button id="settingsToggle" aria-controls="info" aria-expanded="false">[setting]</button>
 <div id="info">
-<strong>NEUMA v0.4</strong>
+<strong>NEUMA v0.4.1</strong>
 <section id="performanceControls"><div id="modePanel" role="group" aria-label="Playback controls">
 <div class="transport" role="group" aria-label="Playback">
 <button id="play" aria-label="Play" title="Play"><svg viewBox="0 0 16 16" aria-hidden="true"><path d="M3 2 15 8 3 14Z"/></svg></button>
@@ -29,7 +29,7 @@
 <div class="row"><label for="volume">Volume</label><input id="volume" aria-label="Volume" type="range" min="0" max="0.5" step="0.01" value="0.12"></div></section>
 <details id="advanced"><summary>Details</summary>
 <section><div class="sectionTitle">MODEL INFO</div><div id="modelInfo" class="small"></div><div id="importInfo" class="small"></div><div id="stats"></div></section>
-<section id="layerControls" hidden><div class="sectionTitle">LAYERS</div><div id="layers"></div><div class="small">3DM: explicit lines / polylines only</div></section>
+<section id="layerControls" hidden><div class="sectionTitle">LAYERS</div><div id="layers"></div><div class="small">3DM: curves / mesh edges / saved surface meshes</div></section>
 <section><div class="sectionTitle">AXES</div>
 <div class="row"><label for="timeAxis">Time</label><select id="timeAxis" aria-label="Time axis" data-role="TIME"></select></div>
 <div class="row"><label for="pitchAxis">Pitch</label><select id="pitchAxis" aria-label="Pitch axis" data-role="PITCH"></select></div></section>
@@ -47,5 +47,5 @@
 <div id="manualHint">Drag: Scan · Right drag: Orbit · Wheel: Zoom</div><div id="axesnote"></div><div id="projectName">Instrumentarium</div>
 <dialog id="sampleDialog" aria-labelledby="sampleTitle"><div class="sampleHeader"><span id="sampleTitle">CHOOSE A SAMPLE</span><button id="closeSamples" aria-label="Close samples">×</button></div><div id="sampleGrid"></div></dialog>
 <input hidden id="file" type="file" accept=".glb,.3dm">
-<script type="module" src="app.js?v=0.4"></script>
+<script type="module" src="app.js?v=0.4.1"></script>
 </body></html>
