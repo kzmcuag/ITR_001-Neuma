@@ -73,6 +73,14 @@ summary:focus-visible { outline: 1px solid var(--itr-active-ui); outline-offset:
 #layers label { display: flex; gap: 6px; align-items: baseline; font-size: 11px; margin: 6px 0; overflow-wrap: anywhere; }
 #layers input[type=checkbox] { appearance: auto; width: auto; min-height: auto; flex: 0 0 auto; accent-color: var(--itr-active-ui); }
 #modelInfo, #importInfo { overflow-wrap: anywhere; }
+.navHelp { margin-top: 12px; }
+.navHeader { display: flex; align-items: baseline; justify-content: space-between; margin-bottom: 5px; }
+.navHeader .sectionTitle { margin: 0; }
+.navHeader #fit { font-size: 10px; }
+.navHelp .help { display: grid; grid-template-columns: 1fr 1fr; gap: 2px 6px; font-size: 10px; color: var(--itr-text-muted); margin: 0; }
+#modelRow { margin-top: 8px; }
+#model { font-size: 10px; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; }
+.soundPresets { margin-top: 12px; }
 .halfScale { display: grid; grid-template-columns: 64px 8px minmax(0,1fr) auto; align-items: center; gap: 4px; font-size: 11px; margin: 7px 0; }
 .halfScale span:last-child { max-width: 54px; overflow-wrap: anywhere; font-size: 10px; }
 .soundPresets button { border: 1px solid var(--itr-control-border); background: var(--itr-control-background); }

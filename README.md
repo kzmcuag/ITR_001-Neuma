@@ -1,4 +1,4 @@
-# Neuma v0.4.2
+# Neuma v0.4.3
 
 Browser instrument mapping the edges of a 3D model to time and pitch.
 
@@ -18,7 +18,7 @@ Open `http://127.0.0.1:4173/`. `npm test` checks mapping, linked pitch controls,
 
 ## Basic and detailed controls
 
-The basic view contains playback, view navigation guidance, Sample/Upload model source, Duration, Half tone in model units, Pluck/Pad and Volume. Details contains axes, total pitch Range (1–96 semitones), linked minimum/maximum pitch, edge range, 3DM layers, dimensions and audio diagnostics. Range edits preserve the current musical midpoint. Details starts collapsed.
+The left panel has three groups: playback with a compact always-visible navigation guide, Model (Sample/Upload), and Scale/Sound (units per beat, BPM, units per half tone, Pluck/Pad and Volume). Details contains axes, total Duration, total pitch Range, linked minimum/maximum pitch, edge range, 3DM layers, dimensions and audio diagnostics. Range edits preserve the current musical midpoint. Details starts collapsed.
 
 ## Model and navigation
 
@@ -29,6 +29,17 @@ The interface follows Corda's design tokens: `#111111` background, IBM Plex Mono
 ## Axis assignment and time
 
 Choose one Time axis and one Pitch axis from X/Y/Z. They cannot overlap; selecting the other role's axis swaps the two. The remaining axis only contributes to the 3D view and does not control sound. Duration is the time to scan the entire selected Time axis. Default: `1:00` (60 seconds). Enter seconds or `m:ss`, up to 60 minutes. The scanning plane follows the selected axis; active edges are highlighted. Play/Pause, Stop and the position slider control playback. Leaving the tab pauses playback.
+
+## Beat distance and BPM
+
+The basic Time controls are 1 beat = [distance] [native units], plus BPM (initially 60). Initially one beat is the model Time-axis span divided by 60, so the entire model takes one minute.
+
+```text
+numberOfBeats = timeAxisSpan / unitsPerBeat
+durationSeconds = numberOfBeats * 60 / BPM
+```
+
+Editing BPM keeps the beat distance fixed. Editing the distance keeps BPM fixed. Both update total Duration and stop/reset playback, as the previous Duration control did. Details still allows a total Duration entry; this recomputes beat distance at the current BPM. An explicitly edited beat distance is retained across axis changes. Before a manual beat-distance edit, axis changes preserve total duration and adjust the distance. Loading a new model recalculates distance in its native units while preserving the current BPM and total Duration. Invalid/nonpositive values and total durations above one hour are rejected.
 
 ## Linked pitch controls
 

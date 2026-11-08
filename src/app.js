@@ -5,7 +5,7 @@ import { collectPlayableEdges, filterEdgeRange } from './model-edges.js';
 import { LiveAudioEngine } from './live-audio.js';
 import { studySegments, SAMPLE_MODELS } from './samples.js';
 import {fitModelCamera} from './model-view.js';
-import { axisNames, swapAssignment, parseDuration, frequency, eventFor, scanEvents,
+import { axisNames, swapAssignment, parseDuration, frequency, eventFor, scanEvents, durationFromBeat, beatFromDuration,
     defaultPitch, changePitch, parsePitch, pitchName } from './mapping.js';
 
 const $ = id => document.getElementById(id);
@@ -19,6 +19,7 @@ let sourceEdges=[],selectedLayers=new Set(),modelUnits='units';
 let rhinoWorker;
 let modelZUp=false;
 let duration = 60, pitch = defaultPitch(1), customPitch = false;
+let beatUnits=1,bpm=60,customBeat=false;
 let edges = [], box = new THREE.Box3(), events = [];
 let playing = false, offset = 0, started = 0, ctx, master, engine, analyser, audioTimer;
 const meterSamples = new Float32Array(2048);
@@ -64,6 +65,14 @@ function fit() {
 function pitchSpan() {
     const k = axisNames[axes.indexOf('PITCH')];
     return box.max[k] - box.min[k];
+}
+function timeSpan(){const k=axisNames[axes.indexOf('TIME')];return box.max[k]-box.min[k];}
+function syncTime(except=document.activeElement?.id){
+    if(except!=='beat')$('beat').value=Number(beatUnits.toPrecision(8));
+    if(except!=='bpm')$('bpm').value=Number(bpm.toPrecision(8));
+    if(except!=='duration')$('duration').value=Number.isInteger(duration)?format(duration):Number(duration.toPrecision(8));
+    $('beatUnits').textContent=modelUnits;
+    $('totalBeats').textContent='Total: '+Number((timeSpan()/beatUnits).toPrecision(6))+' beats';
 }
 
 function syncPitch(except) {
@@ -116,7 +125,7 @@ function rebuild(resume=false) {
     $('edgeLengthValue').textContent=lowest.toPrecision(4)+'–'+highest.toPrecision(4)+' '+modelUnits+' · '+(ranged.length-events.length)+' parallel ignored';
     document.querySelectorAll('[data-role]').forEach(s => s.value = String(axes.indexOf(s.dataset.role)));
     $('axesnote').textContent = axes.flatMap((role,i) => role==='UNUSED'?[]:[`${axisNames[i].toUpperCase()} / ${role}`]).join('\n');
-    syncPitch();
+    syncPitch();syncTime();
     makePlane();
     status(events.length?'Ready':'No playable edges. Adjust axes or Edge range.');
     if(wasPlaying){started=ctx.currentTime;playing=true;schedule(offset);syncTransport();}
@@ -152,6 +161,7 @@ function installSegments(extracted,bounds,name,{units='units',layers=[],rhino=fa
     edges=layers.length?sourceEdges.filter(e=>selectedLayers.has(e.layer)):sourceEdges;
     if(rhino){axes=['TIME','UNUSED','PITCH'];}
     else axes=['TIME','PITCH','UNUSED'];
+    beatUnits=timeSpan()>0?beatFromDuration(timeSpan(),duration,bpm):1;customBeat=false;
     const center = box.getCenter(new THREE.Vector3());
     const points = edges.flatMap(e => [e.a.clone().sub(center),e.b.clone().sub(center)]);
     edgeLines = new THREE.LineSegments(new THREE.BufferGeometry().setFromPoints(points),
@@ -165,6 +175,7 @@ function installSegments(extracted,bounds,name,{units='units',layers=[],rhino=fa
     visual.add(activeLines);
     customPitch = false; pitch = defaultPitch(pitchSpan());
     $('model').textContent = `Model: ${name}`;
+    $('model').title=name;
     $('stats').textContent = `${edges.length.toLocaleString()} edges`;
     $('layerControls').hidden=!layers.length;
     const list=$('layers');list.replaceChildren();
@@ -219,7 +230,7 @@ async function load(file) {
                 `${model.duplicates} duplicate edges removed · ${model.merged} straight joins. `+
                 `${model.skipped} unsupported objects · ${model.hidden} hidden / definition objects skipped.`+
                 (model.missingMeshes?` ${model.missingMeshes} faces / extrusions have no saved display mesh. In Rhino, show Shaded mode and save with render meshes, or use Mesh and save the mesh objects.`:'');
-            if(model.missingMeshes)status(`Loaded · ${model.missingMeshes} faces / extrusions need saved meshes. See Details.`);
+            if(model.missingMeshes)status('Loaded with omissions · see Details');
             setSource('upload');
             return;
         }
@@ -260,6 +271,7 @@ function time() { return playing && mode === 'auto' ? Math.min(duration, offset 
 function silence() {
     clearInterval(audioTimer); audioTimer = undefined;
     engine?.silence();
+    $('audioStatus').textContent='';
 }
 function stop(reset = true) {
     offset = reset ? 0 : time(); playing = false; silence();
@@ -290,8 +302,9 @@ function schedule(from) {
         }
         engine.update(candidates);
         previous=t;
-        status((mode==='manual'?'Holding':'Playing')+' · '+engine.represented+' edges voiced'+(engine.merged ? ' · '+engine.merged+' combined' : '')+
-            (engine.outOfRange ? ' · '+engine.outOfRange+' out of frequency range' : ''));
+        status(mode==='manual'?'Holding':'Playing');
+        $('audioStatus').textContent=engine.represented+' edges voiced'+(engine.merged?' · '+engine.merged+' combined':'')+
+            (engine.outOfRange?' · '+engine.outOfRange+' out of frequency range':'');
     }
     tick();
     audioTimer = setInterval(tick,20);
@@ -320,11 +333,36 @@ $('seek').oninput = () => {
 };
 $('duration').oninput = () => {
     const d = parseDuration($('duration').value);
-    if (Number.isFinite(d) && d <= 3600) { stop(); duration = d; rebuild(); }
+    if (Number.isFinite(d) && d <= 3600) {
+        stop();duration=d;customBeat=false;
+        if(timeSpan()>0)beatUnits=beatFromDuration(timeSpan(),duration,bpm);
+        rebuild();
+    }
 };
+function editTempo(field,final=false){
+    try{
+        const value=+$(field).value,nextBeat=field==='beat'?value:beatUnits,nextBpm=field==='bpm'?value:bpm;
+        const nextDuration=durationFromBeat(timeSpan(),nextBeat,nextBpm);
+        if(nextBeat!==beatUnits||nextBpm!==bpm){
+            stop();beatUnits=nextBeat;bpm=nextBpm;duration=nextDuration;
+            if(field==='beat')customBeat=true;
+            rebuild();
+        }
+        $(field).setAttribute('aria-invalid','false');
+        if(final)syncTime(null);
+    }catch(e){
+        $(field).setAttribute('aria-invalid','true');
+        if(final){status(e.message);syncTime(null);}
+    }
+}
+for(const field of ['beat','bpm']){
+    $(field).oninput=()=>editTempo(field);
+    $(field).onchange=()=>editTempo(field,true);
+}
 $('duration').onchange = () => {
     const d = parseDuration($('duration').value);
-    if (!Number.isFinite(d) || d > 3600) { status('Duration: use seconds or m:ss, up to 60 minutes.'); $('duration').value = format(duration); }
+    if (!Number.isFinite(d) || d > 3600) status('Duration: use seconds or m:ss, up to 60 minutes.');
+    syncTime(null);
 };
 
 function editPitch(field, final = false) {
@@ -357,14 +395,19 @@ document.querySelectorAll('[data-role]').forEach(select => {
     axisNames.forEach((name,index) => select.add(new Option(name.toUpperCase(),String(index))));
     select.value = String(axes.indexOf(select.dataset.role));
     select.onchange = () => {
-        const previous = axes;
+        const previous=axes,previousPitch=pitch,previousDuration=duration,previousBeat=beatUnits;
         axes = swapAssignment(axes,+select.value,select.dataset.role);
         try {
-            if (customPitch) pitch = changePitch(pitch,pitchSpan(),'half',pitch.half);
-            else pitch = defaultPitch(pitchSpan());
+            const nextPitch=customPitch?changePitch(pitch,pitchSpan(),'half',pitch.half):defaultPitch(pitchSpan());
+            let nextDuration=duration,nextBeat=beatUnits;
+            if(timeSpan()>0){
+                if(customBeat)nextDuration=durationFromBeat(timeSpan(),beatUnits,bpm);
+                else nextBeat=beatFromDuration(timeSpan(),duration,bpm);
+            }
+            pitch=nextPitch;duration=nextDuration;beatUnits=nextBeat;
             rebuild();
         } catch (e) {
-            axes = previous;
+            axes=previous;pitch=previousPitch;duration=previousDuration;beatUnits=previousBeat;
             document.querySelectorAll('[data-role]').forEach(s => s.value=String(axes.indexOf(s.dataset.role)));
             status(e.message);
         }
@@ -427,6 +470,7 @@ for(const [id,field] of [['edgeLower','min'],['edgeUpper','max']])$(id).oninput=
 };
 $('load').onclick = () => $('file').click();
 function setSource(source){
+    if(source==='sample')$('model').textContent='Model: '+SAMPLE_MODELS.find(s=>s.id===selectedSample).name;
     for(const [id,value] of [['sampleButton','sample'],['load','upload']]){
         $(id).classList.toggle('active',source===value);
         $(id).setAttribute('aria-pressed',String(source===value));

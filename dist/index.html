@@ -1,10 +1,10 @@
 <!DOCTYPE html>
-<html lang="en"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><title>Neuma v0.4.2</title><link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin><link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=Inter:wght@400&display=swap" rel="stylesheet"><link rel="stylesheet" href="style.css?v=0.4.2"></head>
+<html lang="en"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><title>Neuma v0.4.3</title><link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin><link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=Inter:wght@400&display=swap" rel="stylesheet"><link rel="stylesheet" href="style.css?v=0.4.3"></head>
 <body>
 <div id="view" class="scanView"></div>
 <button id="settingsToggle" aria-controls="info" aria-expanded="false">[setting]</button>
 <div id="info">
-<strong>NEUMA v0.4.2</strong>
+<strong>NEUMA v0.4.3</strong>
 <section id="performanceControls"><div id="modePanel" role="group" aria-label="Playback controls">
 <div class="transport" role="group" aria-label="Playback">
 <button id="play" aria-label="Play" title="Play"><svg viewBox="0 0 16 16" aria-hidden="true"><path d="M3 2 15 8 3 14Z"/></svg></button>
@@ -15,16 +15,16 @@
 <input id="seek" aria-label="Scan position" type="range" min="0" max="1" step="0.001" value="0">
 <div id="status" role="status">Loading sample…</div>
 </div></section>
-<section><div class="sectionTitle">VIEW</div><div class="help"><span id="dragHelp">Drag: Scan</span><br>Right drag: Orbit<br>Middle drag: Pan<br>Wheel: Zoom</div><button class="textButton" id="fit">Fit model</button></section>
+<div class="navHelp"><div class="navHeader"><span class="sectionTitle">VIEW</span><button class="textButton" id="fit">Fit model</button></div><div class="help"><span id="dragHelp">Drag: Scan</span><span>Right: Orbit</span><span>Middle: Pan</span><span>Wheel: Zoom</span></div></div>
 <section><div class="sectionTitle">MODEL</div>
 <div class="modeToggle" role="group" aria-label="Model source"><button id="sampleButton" class="active" aria-pressed="true">Sample</button><button id="load" aria-pressed="false">Upload</button></div>
 <div id="modelRow"><span id="model">Model: Loading</span></div><div class="small">GLB / 3DM</div>
 </section>
-<section><div class="sectionTitle">TIME / PITCH</div>
-<div class="row"><label for="duration">Duration</label><input id="duration" aria-label="Duration minutes and seconds" value="1:00" spellcheck="false"></div>
+<section><div class="sectionTitle">SCALE / SOUND</div>
+<div class="halfScale"><label for="beat">1 beat</label><span>=</span><input id="beat" aria-label="Units per beat" type="number" min="0" step="any"><span id="beatUnits">units</span></div>
+<div class="row"><label for="bpm">BPM</label><input id="bpm" aria-label="BPM" type="number" min="0" step="any" value="60"></div>
 <div class="halfScale"><label for="half">Half tone</label><span>=</span><input id="half" aria-label="Half tone units" type="number" min="0" step="any"><span id="halfUnits">units</span></div>
-</section>
-<section><div class="sectionTitle">SOUND</div><div class="modeToggle soundPresets" role="group" aria-label="Sound preset"><button id="pluckButton" class="active" aria-pressed="true">Pluck</button><button id="padButton" aria-pressed="false">Pad</button></div>
+<div class="modeToggle soundPresets" role="group" aria-label="Sound preset"><button id="pluckButton" class="active" aria-pressed="true">Pluck</button><button id="padButton" aria-pressed="false">Pad</button></div>
 <div class="small" id="presetHint">Sine · quick decay</div>
 <div class="row"><label for="volume">Volume</label><input id="volume" aria-label="Volume" type="range" min="0" max="0.5" step="0.01" value="0.12"></div></section>
 <details id="advanced"><summary>Details</summary>
@@ -33,6 +33,7 @@
 <section><div class="sectionTitle">AXES</div>
 <div class="row"><label for="timeAxis">Time</label><select id="timeAxis" aria-label="Time axis" data-role="TIME"></select></div>
 <div class="row"><label for="pitchAxis">Pitch</label><select id="pitchAxis" aria-label="Pitch axis" data-role="PITCH"></select></div></section>
+<section><div class="sectionTitle">TIME</div><div class="row"><label for="duration">Duration</label><input id="duration" aria-label="Duration minutes and seconds" value="1:00" spellcheck="false"></div><div id="totalBeats" class="small">Total: 60 beats</div></section>
 <section><div class="sectionTitle">PITCH</div><div class="row"><label for="range">Range</label><div class="rangeValue"><input id="range" aria-label="Pitch range in semitones" type="number" min="1" max="96" step="1" value="48"><span>semitones</span></div></div>
 
 <div class="row pitchRow"><label for="low">Minimum</label><input id="low" aria-label="Minimum pitch" spellcheck="false"><span id="lowNote"></span></div>
@@ -40,12 +41,12 @@
 <div class="small">Note or Hz · e.g. D4 / 293.665</div><div class="small" id="center"></div><button class="textButton" id="auto">Reset: midpoint D4</button></section>
 <div id="edgeRangeControls"><div class="sectionTitle">EDGE RANGE <span id="edgeRangeValue">5–95%</span></div>
 <div class="dualRange" role="group" aria-label="Edge length range"><input id="edgeLower" type="range" min="0" max="100" value="5" aria-label="Minimum edge length percentile"><input id="edgeUpper" type="range" min="0" max="100" value="95" aria-label="Maximum edge length percentile"></div><div id="edgeLengthValue" class="small"></div></div>
-<section><div class="sectionTitle">AUDIO</div><div id="voices" class="small">0 voices</div><div id="intersections" class="small">0 intersecting edges</div><div id="audioLevel" class="small">Output: silent</div></section>
+<section><div class="sectionTitle">AUDIO</div><div id="voices" class="small">0 voices</div><div id="intersections" class="small">0 intersecting edges</div><div id="audioLevel" class="small">Output: silent</div><div id="audioStatus" class="small"></div></section>
 </details>
 
 </div>
 <div id="manualHint">Drag: Scan · Right drag: Orbit · Wheel: Zoom</div><div id="axesnote"></div><div id="projectName">Instrumentarium</div>
 <dialog id="sampleDialog" aria-labelledby="sampleTitle"><div class="sampleHeader"><span id="sampleTitle">CHOOSE A SAMPLE</span><button id="closeSamples" aria-label="Close samples">×</button></div><div id="sampleGrid"></div></dialog>
 <input hidden id="file" type="file" accept=".glb,.3dm">
-<script type="module" src="app.js?v=0.4.2"></script>
+<script type="module" src="app.js?v=0.4.3"></script>
 </body></html>

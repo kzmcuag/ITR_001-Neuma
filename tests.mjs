@@ -54,3 +54,13 @@ for(const zUp of [true,false,true]){
     assert.ok(nativeBox.equals(savedBox));
 }
 console.log('Rhino Z-up and GLB Y-up project vertically across repeated switches without changing model bounds.');
+
+const {durationFromBeat,beatFromDuration}=await import('./src/mapping.js');
+assert.equal(durationFromBeat(120,2,60),60);
+assert.equal(durationFromBeat(120,2,120),30);
+assert.equal(durationFromBeat(120,4,60),30);
+assert.equal(beatFromDuration(120,60,60),2);
+for(const span of [.133,1000,3000]){const distance=beatFromDuration(span,60,60);assert.ok(Math.abs(durationFromBeat(span,distance,60)-60)<1e-10);}
+assert.throws(()=>durationFromBeat(0,1,60));assert.throws(()=>durationFromBeat(1,0,60));
+assert.throws(()=>durationFromBeat(1,1,0));assert.throws(()=>durationFromBeat(10000,.001,60));
+console.log('Beat distance, BPM and duration conversions, native-unit spans and invalid inputs passed.');

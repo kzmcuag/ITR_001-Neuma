@@ -1,4 +1,15 @@
 export const axisNames=['x','y','z'];
+export function durationFromBeat(span,beatUnits,bpm){
+    if(!Number.isFinite(span)||span<=0)throw Error('The Time axis has zero length. Choose another axis.');
+    if(!Number.isFinite(beatUnits)||beatUnits<=0||!Number.isFinite(bpm)||bpm<=0)throw Error('Enter positive Beat and BPM values.');
+    const seconds=span/beatUnits*60/bpm;
+    if(!Number.isFinite(seconds)||seconds<=0||seconds>3600)throw Error('Total duration must be within 60 minutes. Increase Beat or BPM.');
+    return seconds;
+}
+export function beatFromDuration(span,seconds,bpm){
+    if(![span,seconds,bpm].every(n=>Number.isFinite(n)&&n>0))throw Error('Enter positive Time span, duration and BPM.');
+    return span*60/(seconds*bpm);
+}
 export function scanEvents(events,time,previous,manual=false,catchShort=false){
     const result=[];
     for(const event of events){
