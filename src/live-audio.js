@@ -42,7 +42,13 @@ export class LiveAudioEngine {
         if(!['pluck','pad'].includes(preset))throw Error('Unsupported preset');
         if(this.preset===preset)return;
         this.preset=preset;
-        for(const voice of this.pool)voice.onset=this.context.currentTime;
+        for(const voice of this.pool){
+            if(voice.id!==null)voice.onset=this.context.currentTime;
+            else{
+                voice.onset=-Infinity;voice.level=0;
+                this.smooth(voice.gain.gain,0,this.context.currentTime,.008);
+            }
+        }
     }
     update(candidates){
         const time=this.context.currentTime;

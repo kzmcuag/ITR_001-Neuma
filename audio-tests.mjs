@@ -36,6 +36,8 @@ const pad=engine.pool.find(v=>v.members.has(5)),padLevel=pad.gain.gain.value;
 assert.equal(pad.gain.gain.constant,.09);
 context.currentTime+=2;engine.update([{id:5,frequency:294}]);assert.equal(pad.gain.gain.value,padLevel);
 engine.update([]);assert.equal(pad.gain.gain.constant,.18);
+engine.setPreset('pluck');engine.update([]);
+assert.ok(engine.pool.every(v=>v.gain.gain.value===0)); // switching presets must not resurrect released notes
 assert.ok(engine.pool.every(v=>v.oscillator.type==='sine'));
 assert.throws(()=>engine.setPreset('sawtooth'));
 const groups=groupPitches(Array.from({length:5000},(_,id)=>({id,frequency:73*2**(id/5000*4)})),256);
