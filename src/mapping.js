@@ -1,4 +1,13 @@
 export const axisNames=['x','y','z'];
+export function scanEvents(events,time,previous,manual=false,catchShort=false){
+    const result=[];
+    for(const event of events){
+        const active=time>=event.start&&(manual?time<=event.end:time<event.end);
+        const crossed=!manual&&catchShort&&event.start>=previous&&event.start<time&&event.end<=time;
+        if(active||crossed)result.push({event,u:crossed?.5:(time-event.start)/(event.end-event.start)});
+    }
+    return result;
+}
 export function swapAssignment(assignments,axis,role){const next=[...assignments],other=next.indexOf(role);next[other]=next[axis];next[axis]=role;return next;}
 export function parseDuration(text){const s=String(text).trim();if(/^\d+:\d{2}$/.test(s)){const [m,sec]=s.split(':').map(Number);return sec<60&&m*60+sec>0?m*60+sec:NaN;}const n=Number(s);return Number.isFinite(n)&&n>0?n:NaN;}
 export function frequency(coordinate,min,half,base=440){return base*2**((coordinate-min)/half/12);}

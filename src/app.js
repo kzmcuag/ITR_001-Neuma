@@ -3,15 +3,18 @@ import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
 import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
 import { collectPlayableEdges, filterEdgeRange } from './model-edges.js';
 import { LiveAudioEngine } from './live-audio.js';
-import { axisNames, swapAssignment, parseDuration, frequency, eventFor,
+import { studySegments } from './samples.js';
+import { axisNames, swapAssignment, parseDuration, frequency, eventFor, scanEvents,
     defaultPitch, changePitch, parsePitch, pitchName } from './mapping.js';
 
 const $ = id => document.getElementById(id);
 const status = text => $('status').textContent = text;
 const sampleURL = new URL('models/test_plasticNumber.glb', window.location.href);
 let axes = ['TIME', 'PITCH', 'UNUSED'];
-let waveform = 'sine', mode = 'auto';
-let edgeLower = 5, edgeUpper = 100;
+let preset = 'pluck', mode = 'auto';
+let edgeLower = 5, edgeUpper = 95;
+let sourceEdges=[],selectedLayers=new Set(),modelUnits='units';
+let rhinoWorker;
 let duration = 60, pitch = defaultPitch(1), customPitch = false;
 let edges = [], box = new THREE.Box3(), events = [];
 let playing = false, offset = 0, started = 0, ctx, master, engine, analyser, audioTimer;
@@ -68,6 +71,8 @@ function syncPitch(except) {
     $('highNote').textContent = pitchName(pitch.high);
     const center = Math.sqrt(pitch.low * pitch.high);
     $('center').textContent = `Midpoint: ${pitchName(center)} / ${center.toFixed(3)} Hz`;
+    $('range').value=Number((12*Math.log2(pitch.high/pitch.low)).toFixed(4));
+    $('halfUnits').textContent=modelUnits;
 }
 
 function makePlane() {
@@ -95,7 +100,7 @@ function makePlane() {
 function rebuild(resume=false) {
     const wasPlaying=resume&&playing;
     stop(false);
-    if(!edges.length)return;
+    if(!edgeLines)return;
     const ranged=filterEdgeRange(edges,edgeLower,edgeUpper);
     events=ranged.map((e,id)=>{const event=eventFor(e,axes,box,duration);return event?{...event,id}:null;}).filter(Boolean);
     const center=box.getCenter(new THREE.Vector3());
@@ -105,7 +110,7 @@ function rebuild(resume=false) {
     $('edgeRangeValue').textContent=edgeLower+'–'+edgeUpper+'%';
     let lowest=ranged.length?Infinity:0,highest=0;
     for(const edge of ranged){lowest=Math.min(lowest,edge.length);highest=Math.max(highest,edge.length);}
-    $('edgeLengthValue').textContent=lowest.toPrecision(4)+'–'+highest.toPrecision(4)+' units · '+(ranged.length-events.length)+' parallel ignored';
+    $('edgeLengthValue').textContent=lowest.toPrecision(4)+'–'+highest.toPrecision(4)+' '+modelUnits+' · '+(ranged.length-events.length)+' parallel ignored';
     document.querySelectorAll('[data-role]').forEach(s => s.value = String(axes.indexOf(s.dataset.role)));
     $('axesnote').textContent = axes.flatMap((role,i) => role==='UNUSED'?[]:[`${axisNames[i].toUpperCase()} / ${role}`]).join('\n');
     syncPitch();
@@ -124,16 +129,27 @@ function setModel(root, name) {
     for (const e of extracted) for (const p of [e.a,e.b]) {
         if (![p.x,p.y,p.z].every(Number.isFinite)) throw Error('Invalid model coordinates.');
     }
+    installSegments(extracted,bounds,name);
+    $('importInfo').textContent='GLB · source coordinate units';
+}
+
+function installSegments(extracted,bounds,name,{units='units',layers=[],rhino=false}={}){
+    if(!extracted.length||bounds.isEmpty())throw Error('No usable line segments.');
     stop();
     dispose(visual); visual.clear(); plane = null;
-    box.copy(bounds); edges = extracted;
+    box.copy(bounds); sourceEdges=extracted;modelUnits=units;
+    const preferred=layers.filter(l=>l.visible&&/(^|::)neuma$/i.test(l.name));
+    selectedLayers=new Set((preferred.length?preferred:layers.filter(l=>l.visible)).map(l=>l.index));
+    edges=layers.length?sourceEdges.filter(e=>selectedLayers.has(e.layer)):sourceEdges;
+    if(rhino){axes=['TIME','UNUSED','PITCH'];}
+    else axes=['TIME','PITCH','UNUSED'];
     const center = box.getCenter(new THREE.Vector3());
     const points = edges.flatMap(e => [e.a.clone().sub(center),e.b.clone().sub(center)]);
     edgeLines = new THREE.LineSegments(new THREE.BufferGeometry().setFromPoints(points),
         new THREE.LineBasicMaterial({ color: 0xaaaaaa, transparent: true, opacity: .85 }));
     visual.add(edgeLines);
     const activeGeometry = new THREE.BufferGeometry();
-    activeGeometry.setAttribute('position', new THREE.BufferAttribute(new Float32Array(edges.length*6),3));
+    activeGeometry.setAttribute('position', new THREE.BufferAttribute(new Float32Array(sourceEdges.length*6),3));
     activeGeometry.setDrawRange(0,0);
     activeLines = new THREE.LineSegments(activeGeometry, new THREE.LineBasicMaterial({ color: 0x00ff00 }));
     activeLines.frustumCulled = false;
@@ -141,22 +157,64 @@ function setModel(root, name) {
     customPitch = false; pitch = defaultPitch(pitchSpan());
     $('model').textContent = `Model: ${name}`;
     $('stats').textContent = `${edges.length.toLocaleString()} edges`;
+    $('layerControls').hidden=!layers.length;
+    const list=$('layers');list.replaceChildren();
+    for(const layer of layers){
+        const label=document.createElement('label'),input=document.createElement('input'),text=document.createElement('span');
+        input.type='checkbox';input.checked=selectedLayers.has(layer.index);
+        text.textContent=layer.name+' · '+layer.count;
+        input.onchange=()=>{
+            if(input.checked)selectedLayers.add(layer.index);else selectedLayers.delete(layer.index);
+            edges=sourceEdges.filter(e=>selectedLayers.has(e.layer));rebuild(true);
+        };
+        label.append(input,text);list.append(label);
+    }
+    const size=box.getSize(new THREE.Vector3());
+    $('modelInfo').textContent=`${units} · ${size.toArray().map(n=>Number(n.toPrecision(5))).join(' × ')} (X / Y / Z)`;
     rebuild(); fit();
 }
 
+function rawSegments(data){
+    return data.map(e=>{const a=new THREE.Vector3(...e.a),b=new THREE.Vector3(...e.b);return {...e,a,b,length:a.distanceTo(b)};});
+}
+function boundsFor(segments){return new THREE.Box3().setFromPoints(segments.flatMap(e=>[e.a,e.b]));}
+
+function decodeRhino(buffer){
+    // Terminating an obsolete import also releases its WASM heap.
+    rhinoWorker?.terminate();
+    const worker=new Worker(new URL('rhino-worker.js',window.location.href));rhinoWorker=worker;
+    return new Promise((resolve,reject)=>{
+        const timeout=setTimeout(()=>{worker.terminate();reject(Error('3DM decoding timed out. Simplify the file.'));},60000);
+        const finish=()=>{clearTimeout(timeout);worker.terminate();if(rhinoWorker===worker)rhinoWorker=null;};
+        worker.onmessage=({data})=>{finish();data.error?reject(Error(data.error)):resolve(data.model);};
+        worker.onerror=()=>{finish();reject(Error('Could not decode 3DM. Try a smaller file.'));};
+        worker.postMessage(buffer,[buffer]);
+    });
+}
+
 async function load(file) {
-    if (!file || !file.name.toLowerCase().endsWith('.glb')) {
-        status('Choose a .glb file.'); return;
+    if (!file || !/\.(glb|3dm)$/i.test(file.name)) {
+        status('Choose a .glb or .3dm file.'); return;
     }
     const generation = ++loadGeneration;
     stop(false); status('Loading model…');
     try {
         if (file.size > 100*1024*1024) throw Error('Choose a model smaller than 100 MB.');
-        const gltf = await loader.parseAsync(await file.arrayBuffer(), '');
+        $('sampleSelect').value='custom';
+        const buffer=await file.arrayBuffer();
+        if(/\.3dm$/i.test(file.name)){
+            const model=await decodeRhino(buffer);
+            if(generation!==loadGeneration)return;
+            const segments=rawSegments(model.segments);
+            installSegments(segments,boundsFor(segments),file.name,{...model,rhino:true});
+            $('importInfo').textContent=`3DM lines / polylines · ${model.skipped} unsupported objects skipped · ${model.hidden} hidden / definition objects skipped`;
+            return;
+        }
+        const gltf = await loader.parseAsync(buffer, '');
         if (generation !== loadGeneration) { dispose(gltf.scene); return; }
         setModel(gltf.scene, file.name);
     } catch (e) {
-        if (generation === loadGeneration) status(`Load error: ${e.message} Use an embedded, uncompressed GLB.`);
+        if (generation === loadGeneration) status(`Load error: ${e.message}`);
     }
 }
 
@@ -164,11 +222,20 @@ async function sample() {
     const generation = ++loadGeneration;
     stop(false); status('Loading sample…');
     try {
+        const kind=$('sampleSelect').value;
+        if(kind==='custom')return;
+        if(kind!=='plastic'){
+            const segments=rawSegments(studySegments(kind));
+            const name={windows:'Window study',steps:'Stepped study',curves:'Curve study'}[kind];
+            installSegments(segments,boundsFor(segments),name);
+            $('importInfo').textContent='Abstract geometry study';return;
+        }
         const response = await fetch(sampleURL);
         if (!response.ok) throw Error(`HTTP ${response.status}`);
         const gltf = await loader.parseAsync(await response.arrayBuffer(), '');
         if (generation !== loadGeneration) { dispose(gltf.scene); return; }
         setModel(gltf.scene, 'test_plasticNumber.glb');
+        $('importInfo').textContent='Sample GLB · source coordinate units';
     } catch (e) {
         if (generation === loadGeneration) status(`Sample load error: ${e.message}`);
     }
@@ -190,24 +257,24 @@ async function audio() {
         analyser = ctx.createAnalyser(); analyser.fftSize = 2048;
         master.connect(compressor); compressor.connect(analyser); analyser.connect(ctx.destination);
         engine = new LiveAudioEngine(ctx,master,256);
-        engine.setWaveform(waveform);
+        engine.setPreset(preset);
     }
     await ctx.resume(); master.gain.value = +$('volume').value;
 }
 function schedule(from) {
     silence();
     const pk = axisNames[axes.indexOf('PITCH')];
+    let previous=from;
     function tick() {
         const t = mode==='manual'?offset:Math.min(duration,from+ctx.currentTime-started);
         if (mode==='auto'&&t >= duration) { stop(false); status('Finished'); return; }
         const candidates = [];
-        for (const e of events) {
-            if (t < e.start || (mode==='manual'?t>e.end:t>=e.end)) continue;
-            const u = (t-e.start)/(e.end-e.start);
+        for (const {event:e,u} of scanEvents(events,t,previous,mode==='manual',preset==='pluck')) {
             const coordinate = e.a[e.p]+(e.b[e.p]-e.a[e.p])*u;
             candidates.push({ id:e.id, frequency:frequency(coordinate,box.min[pk],pitch.half,pitch.low) });
         }
         engine.update(candidates);
+        previous=t;
         status((mode==='manual'?'Holding':'Playing')+' · '+engine.represented+' edges voiced'+(engine.merged ? ' · '+engine.merged+' combined' : '')+
             (engine.outOfRange ? ' · '+engine.outOfRange+' out of frequency range' : ''));
     }
@@ -261,6 +328,16 @@ for (const field of ['half','low','high']) {
     $(field).onchange = () => editPitch(field,true);
 }
 $('auto').onclick = () => { pitch = defaultPitch(pitchSpan()); customPitch = false; rebuild(); };
+function editRange(final=false){
+    const n=+$('range').value;
+    if(!Number.isFinite(n)||n<1||n>96){if(final)syncPitch();return;}
+    if(Math.abs(n-12*Math.log2(pitch.high/pitch.low))<1e-8)return;
+    const midpoint=Math.sqrt(pitch.low*pitch.high);
+    pitch={low:midpoint*2**(-n/24),high:midpoint*2**(n/24),half:pitchSpan()>0?pitchSpan()/n:1};
+    customPitch=true;rebuild();
+}
+$('range').oninput=()=>editRange();
+$('range').onchange=()=>editRange(true);
 document.querySelectorAll('[data-role]').forEach(select => {
     axisNames.forEach((name,index) => select.add(new Option(name.toUpperCase(),String(index))));
     select.value = String(axes.indexOf(select.dataset.role));
@@ -278,9 +355,9 @@ document.querySelectorAll('[data-role]').forEach(select => {
         }
     };
 });
-for (const type of ['sine','sawtooth']) $(type+'Button').onclick = () => {
-    waveform = type; engine?.setWaveform(type);
-    for (const name of ['sine','sawtooth']) {
+for (const type of ['pluck','pad']) $(type+'Button').onclick = () => {
+    preset = type; engine?.setPreset(type);
+    for (const name of ['pluck','pad']) {
         $(name+'Button').classList.toggle('active',name===type);
         $(name+'Button').setAttribute('aria-pressed',String(name===type));
     }
@@ -334,7 +411,7 @@ for(const [id,field] of [['edgeLower','min'],['edgeUpper','max']])$(id).oninput=
 };
 $('load').onclick = () => $('file').click();
 $('file').onchange = () => { load($('file').files[0]); $('file').value = ''; };
-$('demo').onclick = sample; $('fit').onclick = fit;
+$('sampleSelect').onchange=sample; $('fit').onclick = fit;
 $('settingsToggle').onclick = () => {
     const open = document.body.classList.toggle('settingsOpen');
     $('settingsToggle').setAttribute('aria-expanded',String(open));

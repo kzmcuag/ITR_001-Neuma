@@ -3,11 +3,12 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "build": "esbuild src/app.js --bundle --minify --outfile=dist/app.js",
+    "build": "node build.mjs",
     "dev": "node server.mjs",
-    "test": "node tests.mjs && node glb-test.mjs && node audio-tests.mjs"
+    "test": "node tests.mjs && node glb-test.mjs && node audio-tests.mjs && node rhino-tests.mjs"
   },
   "dependencies": {
+    "rhino3dm": "^8.4.0",
     "three": "0.180.0"
   },
   "devDependencies": {

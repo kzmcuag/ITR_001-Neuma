@@ -32,3 +32,12 @@ approx(halfChanged.low,parsePitch('D3'));approx(halfChanged.high,parsePitch('D5'
 approx(frequency(48,0,halfChanged.half,halfChanged.low),halfChanged.high);
 assert.throws(()=>changePitch(initial,48,'low',initial.high));assert.throws(()=>changePitch(initial,48,'half',0));
 console.log('48-semitone D4 defaults and linked low/high/half-tone edits passed.');
+
+const {scanEvents}=await import('./src/mapping.js');
+const tiny={start:.005,end:.009};
+assert.equal(scanEvents([tiny],.02,0,false,true).length,1);
+assert.equal(scanEvents([tiny],.04,.02,false,true).length,0);
+assert.equal(scanEvents([tiny],.02,0,true,true).length,0);
+assert.equal(scanEvents([tiny],.02,0,false,false).length,0);
+assert.equal(scanEvents([tiny],.009,0,true,false)[0].u,1);
+console.log('Sub-tick Pluck events are caught once; manual scans only play current intersections.');

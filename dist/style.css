@@ -63,6 +63,16 @@ input[type=range]::-moz-range-thumb { width: 1px; height: 9px; border: 0; border
 .transport button { border: 0; background: transparent; padding: 5px; width: 28px; height: 32px; font-family: Arial,sans-serif; font-size: 17px; line-height: 1; }
 .transport button:hover, .transport button.active { background: transparent; }
 .transport button:disabled { opacity: .25; cursor: default; }
+.transport svg { display: block; width: 16px; height: 16px; fill: currentColor; }
+.srOnly { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip-path: inset(50%); }
+.rangeValue { display: flex; gap: 6px; align-items: center; min-width: 0; font-size: 10px; }
+.rangeValue input { flex: 1; min-width: 0; }
+details { margin-top: 18px; }
+summary { cursor: pointer; color: var(--itr-text-muted); font-size: 11px; }
+summary:focus-visible { outline: 1px solid var(--itr-active-ui); outline-offset: 3px; }
+#layers label { display: flex; gap: 6px; align-items: baseline; font-size: 11px; margin: 6px 0; overflow-wrap: anywhere; }
+#layers input[type=checkbox] { appearance: auto; width: auto; min-height: auto; flex: 0 0 auto; accent-color: var(--itr-active-ui); }
+#modelInfo, #importInfo { overflow-wrap: anywhere; }
 #info { padding-right: 16px; scrollbar-color: #555 transparent; }
 #info::-webkit-scrollbar { width: 3px; }
 #info::-webkit-scrollbar-track { background: transparent; }
@@ -77,7 +87,7 @@ input[type=range]::-moz-range-thumb { width: 1px; height: 9px; border: 0; border
 .dualRange { position: relative; height: 28px; overflow: hidden; background: linear-gradient(rgba(255,255,255,.35),rgba(255,255,255,.35)) center/100% 1px no-repeat; }
 .dualRange::before, .dualRange::after { content: ''; position: absolute; top: 50%; transform: translateY(-50%); width: 1px; height: 9px; background: var(--itr-active-ui); z-index: 3; pointer-events: none; }
 .dualRange::before { left: calc((100% - 1px) * var(--lower, .05)); }
-.dualRange::after { left: calc((100% - 1px) * var(--upper, 1)); }
+.dualRange::after { left: calc((100% - 1px) * var(--upper, .95)); }
 /* Compensate for the thumb's 8px hit border so its visible marker reaches both track ends. */
 .dualRange input { position: absolute; top: 0; left: -8px; width: calc(100% + 16px); height: 28px; margin: 0; appearance: none; background: transparent; pointer-events: none; }
 .dualRange input::-webkit-slider-thumb { appearance: none; width: 1px; height: 9px; background: transparent; background-clip: padding-box; border: 8px solid transparent; box-sizing: content-box; border-radius: 0; pointer-events: auto; cursor: ew-resize; }
